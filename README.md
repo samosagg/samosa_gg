@@ -18,12 +18,12 @@ diesel migration generate settings_table --migration-dir src/db_migrations/migra
 ```sh
 diesel migration run \
   --config-file="src/db_migrations/diesel.toml" \
-  --database-url="postgresql://ajaythxkur@localhost:5432/samosa_gg"
+  --database-url="postgresql://user@localhost:5432/samosa_gg"
 ```
 
 # Revert last migration
 ```sh
 diesel migration revert \
   --config-file="src/db_migrations/diesel.toml" \
-  --database-url="postgresql://ajaythxkur@localhost:5432/samosa_gg"
+  --database-url="postgresql://user@localhost:5432/samosa_gg"
 ```
