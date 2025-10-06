@@ -3,11 +3,16 @@ pub mod create_trading_account;
 pub mod join_existing_clan;
 pub mod order_leverage;
 pub mod place_order;
+pub mod change_degen_mode;
+pub mod export_pk;
+pub mod accounts;
+pub mod slippage;
 
 use std::{str::FromStr, sync::Arc};
 
 use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{cache::Cache, telegram_bot::TelegramBot};
 
@@ -38,6 +43,14 @@ pub enum UserAction {
         leverage: u64,
         amount: BigDecimal,
     },
+    ChangeDegenMode {
+        change_to: bool,
+        user_id: Uuid
+    },
+    ExportPk,
+    Accounts { user_id: Uuid },
+    Slippage,
+
 }
 
 impl ToString for UserAction {
@@ -63,7 +76,17 @@ impl ToString for UserAction {
                     "confirm_order|{}|{}|{}|{}",
                     market, order_type, leverage, amount
                 )
-            }
+            },
+            UserAction::ChangeDegenMode { change_to, user_id } => {
+                format!(
+                    "degen_mode|{}|{}",
+                    change_to,
+                    user_id
+                )
+            },
+            UserAction::ExportPk => "export_pk".to_string(),
+            UserAction::Accounts { user_id } => format!("accounts|{}", user_id),
+            UserAction::Slippage => "slippage".to_string()
         }
     }
 }
@@ -74,7 +97,7 @@ impl FromStr for UserAction {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split('|').collect();
         match parts[0] {
-            "create" => Ok(UserAction::CreateTradingAccount),
+            "create_trading_account" => Ok(UserAction::CreateTradingAccount),
             "add_group" => Ok(UserAction::AddToGroup),
             "join_clan" => Ok(UserAction::JoinExistingClan),
             "order" if parts.len() == 4 => {
@@ -99,6 +122,17 @@ impl FromStr for UserAction {
                     amount,
                 })
             }
+            "degen_mode" if parts.len() == 3 => {
+                let change_to = parts[1].parse::<bool>().map_err(|_| ())?;
+                let user_id = Uuid::parse_str(parts[2]).map_err(|_| ())?;
+                Ok(UserAction::ChangeDegenMode { change_to, user_id })
+            },
+            "export_pk" => Ok(UserAction::ExportPk),
+            "accounts" if parts.len() == 2  => {
+                let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
+                Ok(UserAction::Accounts { user_id })
+            },
+            "slippage" => Ok(UserAction::Slippage),
             _ => Err(()),
         }
     }

@@ -10,9 +10,7 @@ use teloxide::{
 use crate::{
     cache::Cache,
     telegram_bot::{
-        TelegramBot,
-        actions::CallbackQueryProcessor,
-        states::{PendingState, long_pair::escape_markdown_v2},
+        actions::CallbackQueryProcessor, escape_markdown_v2, states::PendingState, TelegramBot
     },
 };
 

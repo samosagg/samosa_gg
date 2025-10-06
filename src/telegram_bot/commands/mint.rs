@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::{
     cache::Cache,
-    db_models::users::User,
-    telegram_bot::{TelegramBot, commands::CommandProcessor},
+    db_models::{users::User, wallets::Wallet},
+    telegram_bot::{commands::CommandProcessor, TelegramBot},
     utils::{database_connection::get_db_connection, decibel_transaction::mint},
 };
 use anyhow::Context;
@@ -33,24 +33,36 @@ impl CommandProcessor for Mint {
                 .await?;
             return Ok(());
         };
+        
+        let primary_wallet_opt = Wallet::get_primary_wallet_by_user_id(user.id, &mut conn).await?;
+        let primary_wallet = if let Some(wallet) = primary_wallet_opt {
+            wallet
+        } else {
+            bot.send_message(msg.chat.id, build_text_for_wallet_not_created())
+                .parse_mode(ParseMode::MarkdownV2)
+                .await?;
+            return Ok(());
+        };
+
         let processing_message = bot
             .send_message(msg.chat.id, build_text_for_processing_request())
             .await?;
+
         let amount = 10000000u64;
 
-        let payload = mint(&cfg.config.contract_address, &user.wallet_address, amount)?;
+        let payload = mint(&cfg.config.contract_address, &primary_wallet.address, amount)?;
         let hash = cfg
             .aptos_client
             .sign_submit_txn_with_turnkey_and_fee_payer(
-                &user.wallet_address,
-                &user.wallet_public_key,
+                &primary_wallet.address,
+                &primary_wallet.public_key,
                 payload,
             )
             .await?;
         tracing::info!(
             "Minted usdc faucet: {}, sender({})",
             hash,
-            user.wallet_address
+            primary_wallet.address
         );
 
         bot.edit_message_text(

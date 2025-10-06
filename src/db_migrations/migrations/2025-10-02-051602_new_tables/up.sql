@@ -1,17 +1,24 @@
 -- Your SQL goes here
 CREATE TABLE users(
     id UUID PRIMARY KEY NOT NULL,
-    wallet_id VARCHAR NOT NULL,
-    wallet_address VARCHAR(66) NOT NULL,
-    wallet_public_key VARCHAR NOT NULL,
     telegram_id BIGINT,
     telegram_username VARCHAR,
-    secondary_wallet_address VARCHAR(66)
+    secondary_wallet_address VARCHAR(66),
+    degen_mode BOOLEAN DEFAULT FALSE NOT NULL
 );
 
-CREATE TABLE sub_accounts(
+CREATE TABLE wallets(
     id UUID PRIMARY KEY NOT NULL,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    wallet_id VARCHAR NOT NULL,
+    address VARCHAR(66) NOT NULL,
+    public_key VARCHAR NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE subaccounts(
+    id UUID PRIMARY KEY NOT NULL,
+    wallet_id UUID NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
     address VARCHAR(66) NOT NULL,
     is_primary BOOLEAN DEFAULT FALSE
 );

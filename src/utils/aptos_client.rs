@@ -84,13 +84,13 @@ impl AptosClient {
             .first()
             .context("Failed to get first wallet address")?;
         let wallet_id = create_wallet_result.wallet_id;
-        let private_key = Self::export_private_key(Arc::clone(&self), &wallet_address).await?;
+        let private_key = Self::export_private_key(&Arc::clone(&self), &wallet_address).await?;
         let public_key = Self::get_public_key_str_from_private_key_str(&private_key)?;
         Ok((wallet_id, wallet_address.clone(), public_key))
     }
 
     pub async fn export_private_key(
-        self: Arc<Self>,
+        self: &Arc<Self>,
         wallet_address: &str,
     ) -> anyhow::Result<String> {
         let mut export_client = ExportClient::new(&QuorumPublicKey::production_signer());

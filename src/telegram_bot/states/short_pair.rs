@@ -9,7 +9,7 @@ use teloxide::{
 
 use crate::{
     cache::{Cache, ICache, Market},
-    telegram_bot::{states::{long_pair::{build_leverage_keyboard, build_text_for_placing_order, escape_markdown_v2}, StateProcessor}, TelegramBot},
+    telegram_bot::{escape_markdown_v2, states::{long_pair::{build_leverage_keyboard, build_text_for_placing_order}, StateProcessor}, TelegramBot},
 };
 
 pub struct ShortPair;

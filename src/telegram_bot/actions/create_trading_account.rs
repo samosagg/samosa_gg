@@ -1,7 +1,7 @@
 use crate::{
     cache::Cache,
-    db_models::{settings::NewSetting, users::NewTelegramUser},
-    schema::{settings, users},
+    db_models::{users::NewTelegramUser, wallets::NewWallet},
+    schema::{users, wallets},
     telegram_bot::{
         actions::CallbackQueryProcessor, commands::start::{build_keyboard_for_existing_user, build_text_for_existing_user}, TelegramBot
     },
@@ -36,29 +36,27 @@ impl CallbackQueryProcessor for CreateTradingAccount {
             .await?;
         let new_user = NewTelegramUser::to_db_user_with_custom_uuid(
             uuid::Uuid::new_v4(),
-            wallet_id,
-            wallet_address.clone(),
-            wallet_public_key.clone(),
             telegram_id,
             from.username,
         );
 
-        let new_setting = NewSetting::to_db_setting(
-            new_user.id, 
-            false, 
-            true
+        let new_wallet = NewWallet::to_db_wallet(
+            new_user.id,
+            wallet_id,
+            wallet_address.clone(),
+            wallet_public_key.clone()
         );
 
         let create_user_query = diesel::insert_into(users::table)
             .values(new_user)
             .on_conflict_do_nothing();
-        let create_settings_query = diesel::insert_into(settings::table)
-            .values(new_setting)
+        let create_wallet_query = diesel::insert_into(wallets::table)
+            .values(new_wallet)
             .on_conflict_do_nothing();
 
         let mut conn = get_db_connection(&cfg.pool).await?;
         execute_with_better_error(&mut conn, vec![create_user_query]).await?;
-        execute_with_better_error(&mut conn, vec![create_settings_query]).await?;
+        execute_with_better_error(&mut conn, vec![create_wallet_query]).await?;
 
         bot.edit_message_text(
             msg.chat().id,

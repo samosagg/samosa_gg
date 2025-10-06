@@ -1,9 +1,7 @@
 use crate::{
     cache::{Cache, ICache},
     telegram_bot::{
-        TelegramBot,
-        actions::UserAction,
-        states::{StateProcessor, long_pair::escape_markdown_v2},
+        actions::UserAction, escape_markdown_v2, states::StateProcessor, TelegramBot
     },
 };
 use bigdecimal::BigDecimal;

@@ -13,7 +13,7 @@ use crate::{
     config::Config,
     telegram_bot::{
         actions::{
-            add_to_group::AddToGroup, create_trading_account::CreateTradingAccount, join_existing_clan::JoinExistingClan, order_leverage::OrderLeverage, place_order::PlaceOrder, CallbackQueryProcessor, UserAction
+            accounts::Accounts, add_to_group::AddToGroup, change_degen_mode::DegenMode, create_trading_account::CreateTradingAccount, export_pk::ExportPk, join_existing_clan::JoinExistingClan, order_leverage::OrderLeverage, place_order::PlaceOrder, slippage::Slippage, CallbackQueryProcessor, UserAction
         },
         commands::{
             long::Long, mint::Mint, settings::Settings, short::Short, start::Start, wallet::Wallet, CommandProcessor, PrivateCommand
@@ -165,6 +165,16 @@ async fn handle_callback_query(
                         amount,
                     }))
                 }
+                Ok(UserAction::ChangeDegenMode { change_to, user_id }) => {
+                    tracing::info!("Degen mode change callback received: to={}", change_to);
+                    Some(Box::new(DegenMode { change_to, user_id }))
+                }
+                Ok(UserAction::ExportPk) => Some(Box::new(ExportPk)),
+                Ok(UserAction::Accounts { user_id }) => {
+                    tracing::info!("Accounts callback received: user_id={}", user_id);
+                    Some(Box::new(Accounts{ user_id }))
+                }
+                Ok(UserAction::Slippage) => Some(Box::new(Slippage)),
                 Err(_) => {
                     tracing::warn!("Unknown callback: {}", data);
                     None
@@ -236,4 +246,15 @@ pub async fn send_temporary_message(
     });
 
     Ok(())
+}
+
+pub fn escape_markdown_v2(text: &str) -> String {
+    let special = r#"_*[]()~`>#+-= {}.!""#; 
+    text.chars()
+        .map(|c| if special.contains(c) { format!(r"\{}", c) } else { c.to_string() })
+        .collect()
+}
+
+pub fn build_text_for_contact_support() -> String {
+    "An unexpected error has occured, Please contact support".to_string()
 }

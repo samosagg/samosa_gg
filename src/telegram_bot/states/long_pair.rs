@@ -10,7 +10,7 @@ use teloxide::{
 
 use crate::{
     cache::{Cache, ICache, Market},
-    telegram_bot::{TelegramBot, actions::UserAction, states::StateProcessor},
+    telegram_bot::{actions::UserAction, escape_markdown_v2, states::StateProcessor, TelegramBot},
 };
 
 pub struct LongPair;
@@ -107,14 +107,3 @@ pub fn build_text_for_placing_order(
     )
 }
 
-pub fn escape_markdown_v2(text: &str) -> String {
-    let special_chars = r#"_*[]()~`>#+-=|{}.!\"#;
-    let mut escaped = String::new();
-    for c in text.chars() {
-        if special_chars.contains(c) {
-            escaped.push('\\');
-        }
-        escaped.push(c);
-    }
-    escaped
-}
