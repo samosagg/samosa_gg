@@ -1,0 +1,31 @@
+aptos_base_url: https://api.netna.staging.aptoslabs.com/v1
+contract_address: 0xb8a5788314451ce4d2fbbad32e1bad88d4184b73943b7fe5166eab93cf1a5a95
+decibel_url: https://trading-api-http-dev-netna-us-central1-410192433417.us-central1.run.app
+server_config:
+  port: 8585
+  allowed_origins:
+    - http://localhost:3000
+    - https://www.localhost:3000
+jwt_config:
+  secret: shhh
+  expires_in: 1d
+db_config: 
+  url: postgresql://username:password@host:port/db_name
+  pool_size: 10
+turnkey_config:
+  organization_id: 
+  api_private_key: 
+  api_public_key: 
+bot_config:
+  token: 
+  username: 
+admin_config:
+  sponsor_private_key: 
+transaction_stream_config:
+    indexer_grpc_data_service_address: 
+    # At which tx version to start indexing, usually this is the tx version when the contract was deployed
+    starting_version: 
+    # At which tx version to stop indexing
+    # request_ending_version: 6853325114
+    auth_token: ""
+    request_name_header: "contract-processor"

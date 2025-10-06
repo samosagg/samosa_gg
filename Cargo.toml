@@ -1,0 +1,52 @@
+[package]
+name = "pace_api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.47.1", features = ["full"] }
+# turnkey dependencies
+turnkey_client = "0.4.0"
+turnkey_enclave_encrypt = "0.4.0"
+# aptos dependencies 
+aptos-sdk = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "2dd9c73b27fdcbe78c7391fd43c9a5d00b93e686" }
+aptos-crypto = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "2dd9c73b27fdcbe78c7391fd43c9a5d00b93e686", package="aptos-crypto" }
+aptos-indexer-processor-sdk = { git = "https://github.com/aptos-labs/aptos-indexer-processor-sdk.git", rev = "605969487bdb1352979b49b9b2ae9526fddd8436" }
+
+serde = "1.0.228"
+anyhow = "1.0.100"
+async-trait = "0.1.89"
+serde_json = "1.0.145"
+axum = "0.8.6"
+utoipa-axum = "0.2.0"
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "chrono"] }
+serde_yaml = "0.9.34"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+# diesel dependencies
+diesel = { version = "2.3.2", features = ["postgres_backend", "serde_json", "uuid"] }
+diesel-async = { git = "https://github.com/weiznich/diesel_async.git", rev = "ba8ad28036fb8324805480d5c24e1eb41ceccbe5", features = [
+    "async-connection-wrapper",
+    "postgres",
+    "bb8",
+    "tokio",
+] }
+diesel_migrations = { version = "2.3.0", features = ["postgres"] }
+futures-util = "0.3.31"
+native-tls = "0.2.14"
+postgres-native-tls = "0.5.2"
+url = "2.5.7"
+tokio-postgres = "0.7.14"
+clap = "4.5.48"
+teloxide = { version = "0.17.0", features = ["macros"] }
+hex = "0.4.3"
+uuid = { version = "1.18.1", features = ["v4", "serde"] }
+tokio-util = { version = "0.7.16", features = ["rt"] }
+moka = { version = "0.12.11", features = ["future"] }
+reqwest = { version = "0.12.23", features = ["json"] }
+bigdecimal = "0.4.8"
+
+[patch.crates-io]
+merlin = { git = "https://github.com/aptos-labs/merlin" }
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
