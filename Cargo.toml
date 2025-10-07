@@ -46,6 +46,8 @@ tokio-util = { version = "0.7.16", features = ["rt"] }
 moka = { version = "0.12.11", features = ["future"] }
 reqwest = { version = "0.12.23", features = ["json"] }
 bigdecimal = "0.4.8"
+jsonwebtoken = "9.3.1"
+chrono = "0.4.42"
 
 [patch.crates-io]
 merlin = { git = "https://github.com/aptos-labs/merlin" }

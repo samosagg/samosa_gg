@@ -16,6 +16,7 @@ pub struct Config {
     pub aptos_base_url: String,
     pub contract_address: String,
     pub decibel_url: String,
+    pub terminal_url: String,
     pub server_config: ServerConfig,
     pub jwt_config: JWTConfig,
     pub db_config: DbConfig,

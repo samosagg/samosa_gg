@@ -1,3 +1,5 @@
+pub mod middlewares;
+
 use std::{net::SocketAddr, sync::Arc};
 
 use axum::Router;

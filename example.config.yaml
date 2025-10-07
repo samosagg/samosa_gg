@@ -1,6 +1,7 @@
 aptos_base_url: https://api.netna.staging.aptoslabs.com/v1
 contract_address: 0xb8a5788314451ce4d2fbbad32e1bad88d4184b73943b7fe5166eab93cf1a5a95
 decibel_url: https://trading-api-http-dev-netna-us-central1-410192433417.us-central1.run.app
+terminal_url: "http://localhost:3000"
 server_config:
   port: 8585
   allowed_origins:
