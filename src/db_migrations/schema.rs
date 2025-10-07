@@ -11,6 +11,20 @@ diesel::table! {
 }
 
 diesel::table! {
+    tokens (id) {
+        id -> Uuid,
+        #[max_length = 30]
+        name -> Varchar,
+        #[max_length = 30]
+        symbol -> Varchar,
+        #[max_length = 66]
+        address -> Varchar,
+        coin_addr -> Nullable<Varchar>,
+        decimals -> Int4,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Uuid,
         telegram_id -> Nullable<Int8>,
@@ -19,6 +33,8 @@ diesel::table! {
         secondary_wallet_address -> Nullable<Varchar>,
         degen_mode -> Bool,
         slippage -> Int4,
+        #[max_length = 30]
+        token -> Varchar,
     }
 }
 
@@ -39,6 +55,7 @@ diesel::joinable!(wallets -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     subaccounts,
+    tokens,
     users,
     wallets,
 );

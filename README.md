@@ -11,7 +11,7 @@ deisel setup
 # Generate migration
 ```sh
 diesel migration generate <migration_name> --migration-dir src/db_migrations/migrations 
-diesel migration generate update_users_table --migration-dir src/db_migrations/migrations 
+diesel migration generate update_tokens_table --migration-dir src/db_migrations/migrations 
 ```
 
 # Run migration

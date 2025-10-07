@@ -16,7 +16,8 @@ pub struct User {
     pub telegram_username: Option<String>,
     pub secondary_wallet_address: Option<String>,
     pub degen_mode: bool,
-    pub slippage: i32
+    pub slippage: i32,
+    pub token: String,
 }
 
 impl User {

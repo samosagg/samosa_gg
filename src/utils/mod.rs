@@ -6,3 +6,4 @@ pub mod decibel_transaction;
 pub mod market_indexer;
 pub mod shutdown_utils;
 pub mod view_requests;
+pub mod wallet_transaction;

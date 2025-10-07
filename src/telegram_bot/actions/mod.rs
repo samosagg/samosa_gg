@@ -7,6 +7,12 @@ pub mod change_degen_mode;
 pub mod export_pk;
 pub mod accounts;
 pub mod slippage;
+pub mod stats;
+pub mod balances;
+pub mod withdraw;
+pub mod transfer;
+pub mod close;
+pub mod update_slippage;
 
 use std::{str::FromStr, sync::Arc};
 
@@ -43,14 +49,30 @@ pub enum UserAction {
         leverage: u64,
         amount: BigDecimal,
     },
-    ChangeDegenMode {
-        change_to: bool,
+    Stats,
+    Accounts { 
+        user_id: Uuid,
+        token: String
+    },
+    Withdraw { 
+        user_id: Uuid,
+        token: String
+    },
+    Balances { 
+        user_id: Uuid 
+    },
+    Transfer { 
         user_id: Uuid
     },
     ExportPk,
-    Accounts { user_id: Uuid },
     Slippage,
-
+    ChangeDegenMode {
+        change_to: bool,
+        user_id: Uuid,
+        token: String
+    },
+    Close,
+    UpdateSlippage,
 }
 
 impl ToString for UserAction {
@@ -77,16 +99,23 @@ impl ToString for UserAction {
                     market, order_type, leverage, amount
                 )
             },
-            UserAction::ChangeDegenMode { change_to, user_id } => {
+            UserAction::ChangeDegenMode { change_to, user_id, token } => {
                 format!(
-                    "degen_mode|{}|{}",
+                    "degen_mode|{}|{}|{}",
                     change_to,
-                    user_id
+                    user_id,
+                    token
                 )
             },
+            UserAction::Stats => "stats".to_string(),
             UserAction::ExportPk => "export_pk".to_string(),
-            UserAction::Accounts { user_id } => format!("accounts|{}", user_id),
-            UserAction::Slippage => "slippage".to_string()
+            UserAction::Accounts { user_id, token } => format!("accounts|{}|{}", user_id, token),
+            UserAction::Slippage => "slippage".to_string(),
+            UserAction::Withdraw { user_id, token } => format!("withdraw|{}|{}", user_id, token),
+            UserAction::Balances { user_id } => format!("balances|{}", user_id),
+            UserAction::Transfer { user_id } => format!("transfer|{}", user_id),
+            UserAction::Close => "close".to_string(),
+            UserAction::UpdateSlippage => "update_slippage".to_string()
         }
     }
 }
@@ -100,6 +129,9 @@ impl FromStr for UserAction {
             "create_trading_account" => Ok(UserAction::CreateTradingAccount),
             "add_group" => Ok(UserAction::AddToGroup),
             "join_clan" => Ok(UserAction::JoinExistingClan),
+            "export_pk" => Ok(UserAction::ExportPk),
+            "slippage" => Ok(UserAction::Slippage),
+            "stats" => Ok(UserAction::Stats),
             "order" if parts.len() == 4 => {
                 let market = parts[1].to_string();
                 let order_type = parts[2].to_string();
@@ -122,17 +154,33 @@ impl FromStr for UserAction {
                     amount,
                 })
             }
-            "degen_mode" if parts.len() == 3 => {
+            "degen_mode" if parts.len() == 4 => {
                 let change_to = parts[1].parse::<bool>().map_err(|_| ())?;
                 let user_id = Uuid::parse_str(parts[2]).map_err(|_| ())?;
-                Ok(UserAction::ChangeDegenMode { change_to, user_id })
+                let token = parts[3].to_string();
+
+                Ok(UserAction::ChangeDegenMode { change_to, user_id, token })
             },
-            "export_pk" => Ok(UserAction::ExportPk),
-            "accounts" if parts.len() == 2  => {
+            "accounts" if parts.len() == 3  => {
                 let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
-                Ok(UserAction::Accounts { user_id })
+                let token = parts[2].to_string();
+                Ok(UserAction::Accounts { user_id, token })
             },
-            "slippage" => Ok(UserAction::Slippage),
+            "withdraw" if parts.len() == 3 => {
+                let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
+                let token = parts[2].to_string();
+                Ok(UserAction::Withdraw { user_id, token })
+            },
+            "balances" if parts.len() == 2 => {
+                let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
+                Ok(UserAction::Balances { user_id })
+            },
+            "transfer" if parts.len() == 2 => {
+                let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
+                Ok(UserAction::Transfer { user_id })
+            },
+            "update_slippage" => Ok(UserAction::UpdateSlippage),
+            "close" => Ok(UserAction::Close),
             _ => Err(()),
         }
     }

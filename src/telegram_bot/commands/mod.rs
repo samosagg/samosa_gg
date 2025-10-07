@@ -4,6 +4,7 @@ pub mod start;
 pub mod wallet;
 pub mod short;
 pub mod settings;
+pub mod terminal;
 
 use std::sync::Arc;
 
@@ -39,4 +40,6 @@ pub enum PrivateCommand {
     Short,
     #[command(description = "Open your settings")]
     Settings,
+    #[command(description = "Open your account on Terminal")]
+    Terminal
 }

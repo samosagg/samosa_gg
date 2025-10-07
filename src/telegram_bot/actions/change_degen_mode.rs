@@ -19,7 +19,8 @@ use crate::{
 
 pub struct DegenMode {
     pub change_to: bool,
-    pub user_id: Uuid
+    pub user_id: Uuid,
+    pub token: String
 }
 
 #[async_trait::async_trait]
@@ -53,7 +54,7 @@ impl CallbackQueryProcessor for DegenMode {
         bot.send_message(msg.chat().id, text).await?;
         
         bot.edit_message_reply_markup(msg.chat().id, msg.id())
-            .reply_markup(build_keyboard_for_setting(self.change_to, self.user_id))
+            .reply_markup(build_keyboard_for_setting(self.change_to, self.user_id, &self.token))
             .await?;
         Ok(())
     }
