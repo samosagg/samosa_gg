@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     cache::Cache,
     db_models::{users::User, wallets::Wallet},
-    telegram_bot::{actions::UserAction, commands::CommandProcessor, TelegramBot},
+    telegram_bot::{TelegramBot, actions::UserAction, commands::CommandProcessor},
     utils::database_connection::get_db_connection,
 };
 use anyhow::Context;
@@ -37,20 +37,21 @@ impl CommandProcessor for Start {
                 .reply_markup(build_keyboard_for_new_user())
                 .parse_mode(ParseMode::MarkdownV2)
                 .await?;
-            return Ok(())
+            return Ok(());
         };
-        let maybe_existing_wallet = Wallet::get_primary_wallet_by_user_id(db_user.id, &mut conn).await?;
+        let maybe_existing_wallet =
+            Wallet::get_primary_wallet_by_user_id(db_user.id, &mut conn).await?;
         let existing_wallet = if let Some(wallet) = maybe_existing_wallet {
             wallet
         } else {
             bot.send_message(msg.chat.id, build_text_for_new_user())
                 .parse_mode(ParseMode::MarkdownV2)
                 .await?;
-            return Ok(())
+            return Ok(());
         };
         let kb = build_keyboard_for_existing_user();
         let text = build_text_for_existing_user(&existing_wallet.address);
-        
+
         bot.send_message(msg.chat.id, text)
             .reply_markup(kb)
             .parse_mode(ParseMode::MarkdownV2)

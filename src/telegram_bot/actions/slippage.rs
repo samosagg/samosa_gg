@@ -1,9 +1,19 @@
 // use anyhow::Context;
 use std::sync::Arc;
-use teloxide::{prelude::*, types::{InlineKeyboardButton, InlineKeyboardMarkup}};
+use teloxide::{
+    prelude::*,
+    types::{InlineKeyboardButton, InlineKeyboardMarkup},
+};
 
 use crate::{
-    cache::Cache, db_models::users::User, telegram_bot::{actions::{CallbackQueryProcessor, UserAction}, commands::mint::build_text_for_wallet_not_created, TelegramBot}, utils::database_connection::get_db_connection
+    cache::Cache,
+    db_models::users::User,
+    telegram_bot::{
+        TelegramBot,
+        actions::{CallbackQueryProcessor, UserAction},
+        commands::mint::build_text_for_wallet_not_created,
+    },
+    utils::database_connection::get_db_connection,
 };
 
 pub struct Slippage;
@@ -29,8 +39,9 @@ impl CallbackQueryProcessor for Slippage {
         let db_user = if let Some(existing_user) = maybe_existing_user {
             existing_user
         } else {
-            bot.send_message(msg.chat().id, build_text_for_wallet_not_created()).await?;
-            return Ok(())
+            bot.send_message(msg.chat().id, build_text_for_wallet_not_created())
+                .await?;
+            return Ok(());
         };
 
         let text = build_text_for_slippage(db_user.slippage);
@@ -47,12 +58,8 @@ fn build_text_for_slippage(current_slippage: i32) -> String {
 }
 
 fn build_keyboard_for_slippage_update() -> InlineKeyboardMarkup {
-    InlineKeyboardMarkup::new(
-        vec![
-            vec![
-                InlineKeyboardButton::callback("Cancel", UserAction::Close.to_string()),
-                InlineKeyboardButton::callback("Update Slippage", UserAction::UpdateSlippage.to_string())
-            ]
-        ]
-    )
+    InlineKeyboardMarkup::new(vec![vec![
+        InlineKeyboardButton::callback("Cancel", UserAction::Close.to_string()),
+        InlineKeyboardButton::callback("Update Slippage", UserAction::UpdateSlippage.to_string()),
+    ]])
 }

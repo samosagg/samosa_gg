@@ -4,7 +4,7 @@ use teloxide::{prelude::*, types::ForceReply};
 
 use crate::{
     cache::Cache,
-    telegram_bot::{actions::CallbackQueryProcessor, states::PendingState, TelegramBot},
+    telegram_bot::{TelegramBot, actions::CallbackQueryProcessor, states::PendingState},
 };
 
 pub struct UpdateSlippage;
@@ -21,17 +21,15 @@ impl CallbackQueryProcessor for UpdateSlippage {
             .message
             .ok_or_else(|| anyhow::anyhow!("Message missing in callback query"))?;
 
-        bot.send_message(msg.chat().id, "Reply with the slippage in % you want to set:")
-            .reply_markup(
-                ForceReply::new().selective()
-            )
-            .await?;
+        bot.send_message(
+            msg.chat().id,
+            "Reply with the slippage in % you want to set:",
+        )
+        .reply_markup(ForceReply::new().selective())
+        .await?;
         {
             let mut state = cfg.state.lock().await;
-            state.insert(
-                msg.chat().id,
-                PendingState::WaitingForSlippage,
-            );
+            state.insert(msg.chat().id, PendingState::WaitingForSlippage);
         }
         Ok(())
     }

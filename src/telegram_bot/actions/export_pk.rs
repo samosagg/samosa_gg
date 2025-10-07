@@ -1,10 +1,16 @@
 // use anyhow::Context;
-use std::sync::Arc;
 use anyhow::Context;
+use std::sync::Arc;
 use teloxide::{prelude::*, types::ParseMode};
 
 use crate::{
-    cache::Cache, db_models::{users::User, wallets::Wallet}, telegram_bot::{actions::CallbackQueryProcessor, build_text_for_contact_support, commands::mint::build_text_for_wallet_not_created, escape_markdown_v2, TelegramBot}, utils::database_connection::get_db_connection
+    cache::Cache,
+    db_models::{users::User, wallets::Wallet},
+    telegram_bot::{
+        TelegramBot, actions::CallbackQueryProcessor, build_text_for_contact_support,
+        commands::mint::build_text_for_wallet_not_created, escape_markdown_v2,
+    },
+    utils::database_connection::get_db_connection,
 };
 
 pub struct ExportPk;
@@ -33,7 +39,8 @@ impl CallbackQueryProcessor for ExportPk {
                 .await?;
             return Ok(());
         };
-        let primary_wallet_opt = Wallet::get_primary_wallet_by_user_id(db_user.id, &mut conn).await?;
+        let primary_wallet_opt =
+            Wallet::get_primary_wallet_by_user_id(db_user.id, &mut conn).await?;
         let db_wallet = if let Some(existing_wallet) = primary_wallet_opt {
             existing_wallet
         } else {
@@ -42,9 +49,14 @@ impl CallbackQueryProcessor for ExportPk {
                 .await?;
             return Ok(());
         };
-        let private_key_str = cfg.aptos_client.export_private_key(&db_wallet.address).await?;
+        let private_key_str = cfg
+            .aptos_client
+            .export_private_key(&db_wallet.address)
+            .await?;
         let text = build_text_for_export_pk(&private_key_str);
-        bot.send_message(msg.chat().id, escape_markdown_v2(&text)).parse_mode(ParseMode::MarkdownV2).await?;
+        bot.send_message(msg.chat().id, escape_markdown_v2(&text))
+            .parse_mode(ParseMode::MarkdownV2)
+            .await?;
         Ok(())
     }
 }

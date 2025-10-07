@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub struct Transfer {
-    pub user_id: Uuid
+    pub user_id: Uuid,
 }
 
 #[async_trait::async_trait]

@@ -1,6 +1,4 @@
-use diesel::{
-    AsChangeset, ExpressionMethods, OptionalExtension, QueryDsl, Queryable
-};
+use diesel::{AsChangeset, ExpressionMethods, OptionalExtension, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
@@ -15,20 +13,16 @@ pub struct Token {
     pub symbol: String,
     pub address: String,
     pub coin_addr: Option<String>,
-    pub decimals: i32
+    pub decimals: i32,
 }
 
 impl Token {
-    pub async fn get_tokens(
-        conn: &mut DbPoolConnection<'_>,
-    ) -> diesel::QueryResult<Vec<Self>> {
-        tokens::table
-            .load::<Self>(conn)
-            .await
+    pub async fn get_tokens(conn: &mut DbPoolConnection<'_>) -> diesel::QueryResult<Vec<Self>> {
+        tokens::table.load::<Self>(conn).await
     }
     pub async fn get_token_by_symbol(
         symbol: String,
-        conn: &mut DbPoolConnection<'_>
+        conn: &mut DbPoolConnection<'_>,
     ) -> diesel::QueryResult<Option<Self>> {
         tokens::table
             .filter(tokens::symbol.eq(symbol))

@@ -8,11 +8,7 @@ use aptos_sdk::{
     },
 };
 
-pub fn transfer_fa(
-    fa: &str,
-    to: &str,
-    amount: u64 
-) -> anyhow::Result<TransactionPayload> {
+pub fn transfer_fa(fa: &str, to: &str, amount: u64) -> anyhow::Result<TransactionPayload> {
     let module = ModuleId::new(
         AccountAddress::ONE,
         Identifier::new("primary_fungible_store")?,
@@ -23,7 +19,11 @@ pub fn transfer_fa(
         module,
         Identifier::new("transfer")?,
         vec![],
-        vec![bcs::to_bytes(&fa)?, bcs::to_bytes(&to)?, bcs::to_bytes(&amount)?],
+        vec![
+            bcs::to_bytes(&fa)?,
+            bcs::to_bytes(&to)?,
+            bcs::to_bytes(&amount)?,
+        ],
     ));
     Ok(payload)
 }

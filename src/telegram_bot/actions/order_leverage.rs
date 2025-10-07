@@ -10,7 +10,7 @@ use teloxide::{
 use crate::{
     cache::Cache,
     telegram_bot::{
-        actions::CallbackQueryProcessor, escape_markdown_v2, states::PendingState, TelegramBot
+        TelegramBot, actions::CallbackQueryProcessor, escape_markdown_v2, states::PendingState,
     },
 };
 
@@ -61,7 +61,6 @@ fn build_text_for_choose_position_size(market: &str, order_type: &str) -> String
         "Choose Position Size\n\n\
     Reply with the amount of margin in $ that you would like to {} {} with
     ",
-    order_type,
-        market
+        order_type, market
     )
 }

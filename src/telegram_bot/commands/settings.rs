@@ -3,12 +3,19 @@ use std::sync::Arc;
 use crate::{
     cache::Cache,
     db_models::users::User,
-    telegram_bot::{actions::UserAction, commands::{mint::build_text_for_wallet_not_created, CommandProcessor}, TelegramBot},
+    telegram_bot::{
+        TelegramBot,
+        actions::UserAction,
+        commands::{CommandProcessor, mint::build_text_for_wallet_not_created},
+    },
     utils::database_connection::get_db_connection,
 };
 use anyhow::Context;
-use teloxide::{prelude::*, types::{InlineKeyboardButton, InlineKeyboardMarkup}};
 use teloxide::types::ParseMode;
+use teloxide::{
+    prelude::*,
+    types::{InlineKeyboardButton, InlineKeyboardMarkup},
+};
 use uuid::Uuid;
 
 pub struct Settings;
@@ -42,25 +49,54 @@ impl CommandProcessor for Settings {
     }
 }
 
-pub fn build_keyboard_for_setting(current_degen_mode: bool, user_id: Uuid, token: &str) -> InlineKeyboardMarkup {
-    InlineKeyboardMarkup::new(
+pub fn build_keyboard_for_setting(
+    current_degen_mode: bool,
+    user_id: Uuid,
+    token: &str,
+) -> InlineKeyboardMarkup {
+    InlineKeyboardMarkup::new(vec![
         vec![
-            vec![
-                InlineKeyboardButton::callback("Stats", UserAction::Stats.to_string()),
-                InlineKeyboardButton::callback("Accounts", UserAction::Accounts { user_id, token: token.into() }.to_string()),
-                InlineKeyboardButton::callback("Slippage", UserAction::Slippage.to_string())
-            ],
-            vec![
-                InlineKeyboardButton::callback("Export private key", UserAction::ExportPk.to_string()),
-            ],
-            vec![
-                InlineKeyboardButton::callback("Withdraw", UserAction::Withdraw { user_id, token: token.into() }.to_string()),
-                InlineKeyboardButton::callback("Balances", UserAction::Balances { user_id }.to_string()),
-                // InlineKeyboardButton::callback("Transfer", UserAction::Transfer { user_id }.to_string()),
-            ],
-            vec![
-                InlineKeyboardButton::callback(format!("Degen Mode ({})", if current_degen_mode { "ON" } else { "OFF" }), UserAction::ChangeDegenMode { change_to: !current_degen_mode, user_id, token: token.into() }.to_string()),
-            ],
-        ]
-    )
+            InlineKeyboardButton::callback("Stats", UserAction::Stats.to_string()),
+            InlineKeyboardButton::callback(
+                "Accounts",
+                UserAction::Accounts {
+                    user_id,
+                    token: token.into(),
+                }
+                .to_string(),
+            ),
+            InlineKeyboardButton::callback("Slippage", UserAction::Slippage.to_string()),
+        ],
+        vec![InlineKeyboardButton::callback(
+            "Export private key",
+            UserAction::ExportPk.to_string(),
+        )],
+        vec![
+            InlineKeyboardButton::callback(
+                "Withdraw",
+                UserAction::Withdraw {
+                    user_id,
+                    token: token.into(),
+                }
+                .to_string(),
+            ),
+            InlineKeyboardButton::callback(
+                "Balances",
+                UserAction::Balances { user_id }.to_string(),
+            ),
+            // InlineKeyboardButton::callback("Transfer", UserAction::Transfer { user_id }.to_string()),
+        ],
+        vec![InlineKeyboardButton::callback(
+            format!(
+                "Degen Mode ({})",
+                if current_degen_mode { "ON" } else { "OFF" }
+            ),
+            UserAction::ChangeDegenMode {
+                change_to: !current_degen_mode,
+                user_id,
+                token: token.into(),
+            }
+            .to_string(),
+        )],
+    ])
 }

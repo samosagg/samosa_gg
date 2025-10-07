@@ -53,19 +53,16 @@ pub struct NewTelegramUser {
     pub id: Uuid,
     pub telegram_id: i64,
     pub telegram_username: Option<String>,
-    pub degen_mode: bool
+    pub degen_mode: bool,
 }
 
 impl NewTelegramUser {
-    pub fn to_db_user(
-        telegram_id: i64,
-        telegram_username: Option<String>,
-    ) -> Self {
+    pub fn to_db_user(telegram_id: i64, telegram_username: Option<String>) -> Self {
         Self {
             id: Uuid::new_v4(),
             telegram_id,
             telegram_username,
-            degen_mode: false
+            degen_mode: false,
         }
     }
     pub fn to_db_user_with_custom_uuid(
@@ -77,7 +74,7 @@ impl NewTelegramUser {
             id,
             telegram_id,
             telegram_username,
-            degen_mode: false
+            degen_mode: false,
         }
     }
 }
@@ -88,17 +85,15 @@ impl NewTelegramUser {
 pub struct NewSecondaryWalletUser {
     pub id: Uuid,
     pub secondary_wallet_address: String,
-    pub degen_mode: bool
+    pub degen_mode: bool,
 }
 
 impl NewSecondaryWalletUser {
-    pub fn to_db_user(
-        secondary_wallet_address: String,
-    ) -> Self {
+    pub fn to_db_user(secondary_wallet_address: String) -> Self {
         Self {
             id: Uuid::new_v4(),
             secondary_wallet_address: standardize_address(&secondary_wallet_address),
-            degen_mode: false
+            degen_mode: false,
         }
     }
 }

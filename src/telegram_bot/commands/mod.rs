@@ -1,11 +1,11 @@
+pub mod chart;
 pub mod long;
 pub mod mint;
-pub mod start;
-pub mod wallet;
-pub mod short;
 pub mod settings;
+pub mod short;
+pub mod start;
 pub mod terminal;
-pub mod chart;
+pub mod wallet;
 
 use std::sync::Arc;
 

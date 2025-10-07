@@ -1,5 +1,5 @@
 use diesel::{
-    prelude::Insertable, AsChangeset, ExpressionMethods, OptionalExtension, QueryDsl, Queryable
+    AsChangeset, ExpressionMethods, OptionalExtension, QueryDsl, Queryable, prelude::Insertable,
 };
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
@@ -15,7 +15,7 @@ pub struct Wallet {
     pub wallet_id: String,
     pub address: String,
     pub public_key: String,
-    pub is_primary: bool
+    pub is_primary: bool,
 }
 
 impl Wallet {
@@ -30,7 +30,7 @@ impl Wallet {
     }
     pub async fn get_primary_wallet_by_user_id(
         user_id: Uuid,
-        conn: &mut DbPoolConnection<'_>
+        conn: &mut DbPoolConnection<'_>,
     ) -> diesel::QueryResult<Option<Self>> {
         wallets::table
             .filter(wallets::user_id.eq(user_id))
@@ -50,17 +50,22 @@ pub struct NewWallet {
     pub user_id: Uuid,
     pub wallet_id: String,
     pub address: String,
-    pub public_key: String
+    pub public_key: String,
 }
 
 impl NewWallet {
-    pub fn to_db_wallet(user_id: Uuid, wallet_id: String, address: String, public_key: String) -> Self {
+    pub fn to_db_wallet(
+        user_id: Uuid,
+        wallet_id: String,
+        address: String,
+        public_key: String,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             user_id,
-            wallet_id,  
-            address, 
-            public_key
+            wallet_id,
+            address,
+            public_key,
         }
     }
 }

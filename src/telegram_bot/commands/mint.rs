@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     cache::Cache,
     db_models::{users::User, wallets::Wallet},
-    telegram_bot::{commands::CommandProcessor, TelegramBot},
+    telegram_bot::{TelegramBot, commands::CommandProcessor},
     utils::{database_connection::get_db_connection, decibel_transaction::mint},
 };
 use anyhow::Context;
@@ -33,7 +33,7 @@ impl CommandProcessor for Mint {
                 .await?;
             return Ok(());
         };
-        
+
         let primary_wallet_opt = Wallet::get_primary_wallet_by_user_id(user.id, &mut conn).await?;
         let primary_wallet = if let Some(wallet) = primary_wallet_opt {
             wallet
@@ -50,7 +50,11 @@ impl CommandProcessor for Mint {
 
         let amount = 10000000u64;
 
-        let payload = mint(&cfg.config.contract_address, &primary_wallet.address, amount)?;
+        let payload = mint(
+            &cfg.config.contract_address,
+            &primary_wallet.address,
+            amount,
+        )?;
         let hash = cfg
             .aptos_client
             .sign_submit_txn_with_turnkey_and_fee_payer(

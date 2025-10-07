@@ -1,7 +1,7 @@
+pub mod ask_slippage;
 pub mod long_pair;
 pub mod place_order_quote;
 pub mod short_pair;
-pub mod ask_slippage;
 pub mod withdraw_address;
 pub mod withdraw_amount;
 
@@ -22,13 +22,13 @@ pub enum PendingState {
     WaitingForSlippage,
     WaitingForWithdrawAddress {
         user_id: Uuid,
-        token: String
+        token: String,
     },
     WaitingForWithdrawAmount {
         user_id: Uuid,
         token: String,
-        address: String
-    }
+        address: String,
+    },
 }
 
 #[async_trait::async_trait]

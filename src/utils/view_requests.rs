@@ -17,14 +17,12 @@ pub fn view_fa_balance_request(
     };
     let request = ViewRequest {
         function: entry_function_id,
-        type_arguments: vec![
-            MoveType::Struct(MoveStructTag {
-                address: AccountAddress::ONE.to_string().parse()?,
-                module: "fungible_asset".parse()?,
-                name: "Metadata".parse()?,
-                generic_type_params: vec![],
-            })
-        ],
+        type_arguments: vec![MoveType::Struct(MoveStructTag {
+            address: AccountAddress::ONE.to_string().parse()?,
+            module: "fungible_asset".parse()?,
+            name: "Metadata".parse()?,
+            generic_type_params: vec![],
+        })],
         arguments: vec![json!(wallet_address), json!(fa_metadata)],
     };
     Ok(request)

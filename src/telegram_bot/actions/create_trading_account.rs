@@ -3,7 +3,9 @@ use crate::{
     db_models::{users::NewTelegramUser, wallets::NewWallet},
     schema::{users, wallets},
     telegram_bot::{
-        actions::CallbackQueryProcessor, commands::start::{build_keyboard_for_existing_user, build_text_for_existing_user}, TelegramBot
+        TelegramBot,
+        actions::CallbackQueryProcessor,
+        commands::start::{build_keyboard_for_existing_user, build_text_for_existing_user},
     },
     utils::{
         database_connection::get_db_connection, db_execution::execute_with_better_error,
@@ -44,7 +46,7 @@ impl CallbackQueryProcessor for CreateTradingAccount {
             new_user.id,
             wallet_id,
             wallet_address.clone(),
-            wallet_public_key.clone()
+            wallet_public_key.clone(),
         );
 
         let create_user_query = diesel::insert_into(users::table)
@@ -76,7 +78,7 @@ impl CallbackQueryProcessor for CreateTradingAccount {
                 payload,
             )
             .await?;
-        
+
         tracing::info!(
             "Delegate trading to hash: {}, sender({})",
             hash,

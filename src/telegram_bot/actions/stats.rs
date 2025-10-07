@@ -35,9 +35,6 @@ fn build_text_for_stats(volume: u64, trades: u64, invites: u64) -> String {
         Total volume: **${}**\n\n\
         Trades Made: **{}**\n\n\
         Invites: **{}**",
-        volume,
-        trades,
-        invites
+        volume, trades, invites
     )
 }
-

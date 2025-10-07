@@ -4,7 +4,8 @@ use crate::{
     cache::Cache,
     db_models::{users::User, wallets::Wallet as DbWallet},
     telegram_bot::{
-        build_text_for_contact_support, commands::{mint::build_text_for_wallet_not_created, CommandProcessor}, TelegramBot
+        TelegramBot, build_text_for_contact_support,
+        commands::{CommandProcessor, mint::build_text_for_wallet_not_created},
     },
     utils::{database_connection::get_db_connection, view_requests::view_fa_balance_request},
 };
@@ -37,7 +38,8 @@ impl CommandProcessor for Wallet {
             return Ok(());
         };
 
-        let maybe_existing_wallet = DbWallet::get_primary_wallet_by_user_id(db_user.id, &mut conn).await?;
+        let maybe_existing_wallet =
+            DbWallet::get_primary_wallet_by_user_id(db_user.id, &mut conn).await?;
         let db_wallet = if let Some(existing_wallet) = maybe_existing_wallet {
             existing_wallet
         } else {
@@ -46,7 +48,6 @@ impl CommandProcessor for Wallet {
                 .await?;
             return Ok(());
         };
-
 
         let request = view_fa_balance_request(
             "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02",
@@ -59,8 +60,7 @@ impl CommandProcessor for Wallet {
             .clone();
         let balance: u64 = serde_json::from_value::<String>(balance_json)?.parse::<u64>()?;
 
-        let text =
-            build_text_for_wallet_with_balance(&db_wallet.address, balance / 10u64.pow(6));
+        let text = build_text_for_wallet_with_balance(&db_wallet.address, balance / 10u64.pow(6));
 
         bot.send_message(msg.chat.id, text)
             .parse_mode(ParseMode::MarkdownV2)

@@ -13,7 +13,8 @@ use crate::{
     cache::{Cache, ICache},
     db_models::{subaccounts::SubAccount, users::User},
     telegram_bot::{
-        actions::CallbackQueryProcessor, commands::mint::build_text_for_wallet_not_created, escape_markdown_v2, TelegramBot
+        TelegramBot, actions::CallbackQueryProcessor,
+        commands::mint::build_text_for_wallet_not_created, escape_markdown_v2,
     },
     utils::{
         database_connection::get_db_connection, decibel_transaction::place_order_to_subaccount,

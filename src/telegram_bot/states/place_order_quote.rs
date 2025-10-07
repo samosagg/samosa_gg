@@ -1,8 +1,6 @@
 use crate::{
     cache::{Cache, ICache},
-    telegram_bot::{
-        actions::UserAction, escape_markdown_v2, states::StateProcessor, TelegramBot
-    },
+    telegram_bot::{TelegramBot, actions::UserAction, escape_markdown_v2, states::StateProcessor},
 };
 use bigdecimal::BigDecimal;
 use std::sync::Arc;

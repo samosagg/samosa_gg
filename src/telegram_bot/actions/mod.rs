@@ -1,18 +1,18 @@
+pub mod accounts;
 pub mod add_to_group;
+pub mod balances;
+pub mod change_degen_mode;
+pub mod close;
 pub mod create_trading_account;
+pub mod export_pk;
 pub mod join_existing_clan;
 pub mod order_leverage;
 pub mod place_order;
-pub mod change_degen_mode;
-pub mod export_pk;
-pub mod accounts;
 pub mod slippage;
 pub mod stats;
-pub mod balances;
-pub mod withdraw;
 pub mod transfer;
-pub mod close;
 pub mod update_slippage;
+pub mod withdraw;
 
 use std::{str::FromStr, sync::Arc};
 
@@ -50,26 +50,26 @@ pub enum UserAction {
         amount: BigDecimal,
     },
     Stats,
-    Accounts { 
+    Accounts {
         user_id: Uuid,
-        token: String
+        token: String,
     },
-    Withdraw { 
+    Withdraw {
         user_id: Uuid,
-        token: String
+        token: String,
     },
-    Balances { 
-        user_id: Uuid 
+    Balances {
+        user_id: Uuid,
     },
-    Transfer { 
-        user_id: Uuid
+    Transfer {
+        user_id: Uuid,
     },
     ExportPk,
     Slippage,
     ChangeDegenMode {
         change_to: bool,
         user_id: Uuid,
-        token: String
+        token: String,
     },
     Close,
     UpdateSlippage,
@@ -98,15 +98,14 @@ impl ToString for UserAction {
                     "confirm_order|{}|{}|{}|{}",
                     market, order_type, leverage, amount
                 )
-            },
-            UserAction::ChangeDegenMode { change_to, user_id, token } => {
-                format!(
-                    "degen_mode|{}|{}|{}",
-                    change_to,
-                    user_id,
-                    token
-                )
-            },
+            }
+            UserAction::ChangeDegenMode {
+                change_to,
+                user_id,
+                token,
+            } => {
+                format!("degen_mode|{}|{}|{}", change_to, user_id, token)
+            }
             UserAction::Stats => "stats".to_string(),
             UserAction::ExportPk => "export_pk".to_string(),
             UserAction::Accounts { user_id, token } => format!("accounts|{}|{}", user_id, token),
@@ -115,7 +114,7 @@ impl ToString for UserAction {
             UserAction::Balances { user_id } => format!("balances|{}", user_id),
             UserAction::Transfer { user_id } => format!("transfer|{}", user_id),
             UserAction::Close => "close".to_string(),
-            UserAction::UpdateSlippage => "update_slippage".to_string()
+            UserAction::UpdateSlippage => "update_slippage".to_string(),
         }
     }
 }
@@ -159,26 +158,30 @@ impl FromStr for UserAction {
                 let user_id = Uuid::parse_str(parts[2]).map_err(|_| ())?;
                 let token = parts[3].to_string();
 
-                Ok(UserAction::ChangeDegenMode { change_to, user_id, token })
-            },
-            "accounts" if parts.len() == 3  => {
+                Ok(UserAction::ChangeDegenMode {
+                    change_to,
+                    user_id,
+                    token,
+                })
+            }
+            "accounts" if parts.len() == 3 => {
                 let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
                 let token = parts[2].to_string();
                 Ok(UserAction::Accounts { user_id, token })
-            },
+            }
             "withdraw" if parts.len() == 3 => {
                 let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
                 let token = parts[2].to_string();
                 Ok(UserAction::Withdraw { user_id, token })
-            },
+            }
             "balances" if parts.len() == 2 => {
                 let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
                 Ok(UserAction::Balances { user_id })
-            },
+            }
             "transfer" if parts.len() == 2 => {
                 let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
                 Ok(UserAction::Transfer { user_id })
-            },
+            }
             "update_slippage" => Ok(UserAction::UpdateSlippage),
             "close" => Ok(UserAction::Close),
             _ => Err(()),

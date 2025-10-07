@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     cache::Cache,
-    telegram_bot::{actions::CallbackQueryProcessor, states::PendingState, TelegramBot},
+    telegram_bot::{TelegramBot, actions::CallbackQueryProcessor, states::PendingState},
 };
 
 pub struct Withdraw {
@@ -27,16 +27,25 @@ impl CallbackQueryProcessor for Withdraw {
 
         {
             let mut state = cfg.state.lock().await;
-            state.insert(msg.chat().id, PendingState::WaitingForWithdrawAddress {
-                user_id: self.user_id,
-                token: self.token.clone() 
-            });
+            state.insert(
+                msg.chat().id,
+                PendingState::WaitingForWithdrawAddress {
+                    user_id: self.user_id,
+                    token: self.token.clone(),
+                },
+            );
         }
 
-        bot.send_message(msg.chat().id, format!("Reply with the address you want to withdraw {} to", self.token))
-            .reply_markup(ForceReply::new().selective())
-            .await?;
-        
+        bot.send_message(
+            msg.chat().id,
+            format!(
+                "Reply with the address you want to withdraw {} to",
+                self.token
+            ),
+        )
+        .reply_markup(ForceReply::new().selective())
+        .await?;
+
         Ok(())
     }
 }

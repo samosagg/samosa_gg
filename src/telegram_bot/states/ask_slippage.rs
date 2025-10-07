@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use diesel::{query_dsl::methods::FilterDsl, ExpressionMethods};
-use teloxide::{
-    prelude::Requester,
-};
+use diesel::{ExpressionMethods, query_dsl::methods::FilterDsl};
+use teloxide::prelude::Requester;
 
 use crate::{
-    cache::Cache, schema::users, telegram_bot::{states::{StateProcessor}, TelegramBot}, utils::{database_connection::get_db_connection, db_execution::execute_with_better_error}
+    cache::Cache,
+    schema::users,
+    telegram_bot::{TelegramBot, states::StateProcessor},
+    utils::{database_connection::get_db_connection, db_execution::execute_with_better_error},
 };
 
 pub struct AskSlippage;
@@ -29,8 +30,9 @@ impl StateProcessor for AskSlippage {
             }
         };
         if new_slippage <= 0 || new_slippage >= 100 {
-            bot.send_message(msg.chat.id, "Slippage must be between 0 to 100").await?;
-            return Ok(())
+            bot.send_message(msg.chat.id, "Slippage must be between 0 to 100")
+                .await?;
+            return Ok(());
         };
 
         let telegram_id = match msg.from {
@@ -45,7 +47,11 @@ impl StateProcessor for AskSlippage {
 
         execute_with_better_error(&mut conn, vec![query]).await?;
 
-        bot.send_message(msg.chat.id, format!("Successfully updated slippage to {}%", new_slippage)).await?;
+        bot.send_message(
+            msg.chat.id,
+            format!("Successfully updated slippage to {}%", new_slippage),
+        )
+        .await?;
         {
             let mut state = cfg.state.lock().await;
             state.remove(&msg.chat.id);

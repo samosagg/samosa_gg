@@ -60,12 +60,8 @@ pub fn place_order_to_subaccount(
         Identifier::new("dex_accounts")?,
     );
     let args = vec![
-        bcs::to_bytes(
-            &AccountAddress::from_hex_literal(subaccount)?
-        )?,
-        bcs::to_bytes(
-            &AccountAddress::from_hex_literal(market_address)?
-        )?,
+        bcs::to_bytes(&AccountAddress::from_hex_literal(subaccount)?)?,
+        bcs::to_bytes(&AccountAddress::from_hex_literal(market_address)?)?,
         bcs::to_bytes(&order_value)?,
         bcs::to_bytes(&order_size)?,
         bcs::to_bytes(&is_long)?,
@@ -88,4 +84,3 @@ pub fn place_order_to_subaccount(
     ));
     Ok(payload)
 }
-

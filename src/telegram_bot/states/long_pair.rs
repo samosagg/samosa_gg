@@ -10,7 +10,7 @@ use teloxide::{
 
 use crate::{
     cache::{Cache, ICache, Market},
-    telegram_bot::{actions::UserAction, escape_markdown_v2, states::StateProcessor, TelegramBot},
+    telegram_bot::{TelegramBot, actions::UserAction, escape_markdown_v2, states::StateProcessor},
 };
 
 pub struct LongPair;
@@ -106,4 +106,3 @@ pub fn build_text_for_placing_order(
         order_type, market.market_name, price, market.max_leverage
     )
 }
-

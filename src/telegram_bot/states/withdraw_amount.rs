@@ -1,20 +1,26 @@
 use std::sync::Arc;
 
 use bigdecimal::BigDecimal;
-use teloxide::{
-    payloads::EditMessageTextSetters, prelude::Requester, types::ParseMode
-};
+use teloxide::{payloads::EditMessageTextSetters, prelude::Requester, types::ParseMode};
 use uuid::Uuid;
 
 use crate::{
-    cache::Cache, db_models::{tokens::Token, wallets::Wallet}, telegram_bot::{build_text_for_contact_support, commands::mint::build_text_for_wallet_not_created, states::StateProcessor, TelegramBot}, utils::{database_connection::get_db_connection, view_requests::view_fa_balance_request, wallet_transaction::transfer_fa}
+    cache::Cache,
+    db_models::{tokens::Token, wallets::Wallet},
+    telegram_bot::{
+        TelegramBot, build_text_for_contact_support,
+        commands::mint::build_text_for_wallet_not_created, states::StateProcessor,
+    },
+    utils::{
+        database_connection::get_db_connection, view_requests::view_fa_balance_request,
+        wallet_transaction::transfer_fa,
+    },
 };
-
 
 pub struct WithdrawAmount {
     pub user_id: Uuid,
     pub token: String,
-    pub address: String
+    pub address: String,
 }
 
 #[async_trait::async_trait]
@@ -37,19 +43,21 @@ impl StateProcessor for WithdrawAmount {
         let mut conn = get_db_connection(&cfg.pool).await?;
         let wallet_opt = Wallet::get_primary_wallet_by_user_id(self.user_id, &mut conn).await?;
         let db_wallet = if let Some(wallet) = wallet_opt {
-            wallet 
+            wallet
         } else {
-            bot.send_message(msg.chat.id, build_text_for_wallet_not_created()).await?;
-            return Ok(())
+            bot.send_message(msg.chat.id, build_text_for_wallet_not_created())
+                .await?;
+            return Ok(());
         };
 
         let token_opt = Token::get_token_by_symbol(self.token.clone(), &mut conn).await?;
 
         let db_token = if let Some(token) = token_opt {
-            token 
+            token
         } else {
-            bot.send_message(msg.chat.id, build_text_for_contact_support()).await?;
-            return Ok(())
+            bot.send_message(msg.chat.id, build_text_for_contact_support())
+                .await?;
+            return Ok(());
         };
 
         let multiplier = BigDecimal::from(10u64.pow(db_token.decimals as u32));
@@ -59,11 +67,8 @@ impl StateProcessor for WithdrawAmount {
             .to_string()
             .parse::<u64>()
             .map_err(|_| anyhow::anyhow!("Failed to convert amount to u64"))?;
-        
-        let request = view_fa_balance_request(
-            &db_token.address,
-            &db_wallet.address,
-        )?;
+
+        let request = view_fa_balance_request(&db_token.address, &db_wallet.address)?;
         let response = cfg.aptos_client.view(&request).await?;
         let balance_json = response
             .get(0)
@@ -77,21 +82,18 @@ impl StateProcessor for WithdrawAmount {
         }
 
         if balance < amount_u64 {
-            bot.send_message(msg.chat.id, "Insufficient balance to withdraw").await?;
-            return Ok(())
+            bot.send_message(msg.chat.id, "Insufficient balance to withdraw")
+                .await?;
+            return Ok(());
         }
 
         let processing_message = bot
             .send_message(msg.chat.id, "Processing withdraw request, please wait...")
             .await?;
 
-        let payload = transfer_fa(
-            &db_token.address, 
-            &self.address, 
-            amount_u64
-        )?;
+        let payload = transfer_fa(&db_token.address, &self.address, amount_u64)?;
 
-         let hash = cfg
+        let hash = cfg
             .aptos_client
             .sign_submit_txn_with_turnkey_and_fee_payer(
                 &db_wallet.address,
@@ -99,12 +101,8 @@ impl StateProcessor for WithdrawAmount {
                 payload,
             )
             .await?;
-        tracing::info!(
-            "Withdraw hash: {}, sender({})",
-            hash,
-            &db_wallet.address 
-        );
-        
+        tracing::info!("Withdraw hash: {}, sender({})", hash, &db_wallet.address);
+
         bot.edit_message_text(
             msg.chat.id,
             processing_message.id,
