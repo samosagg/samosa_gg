@@ -16,7 +16,7 @@ impl CommandProcessor for Chart {
     ) -> anyhow::Result<()> {
         let args = msg.text();
         // get pair and interval from args
-
+        // cfg.config.decibel_url
         Ok(())
     }
 }
