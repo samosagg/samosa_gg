@@ -16,7 +16,7 @@ use crate::{
             accounts::Accounts, add_to_group::AddToGroup, balances::Balances, change_degen_mode::DegenMode, close::Close, create_trading_account::CreateTradingAccount, export_pk::ExportPk, join_existing_clan::JoinExistingClan, order_leverage::OrderLeverage, place_order::PlaceOrder, slippage::Slippage, stats::Stats, transfer::Transfer, update_slippage::UpdateSlippage, withdraw::Withdraw, CallbackQueryProcessor, UserAction
         },
         commands::{
-            long::Long, mint::Mint, settings::Settings, short::Short, start::Start, terminal::Terminal, wallet::Wallet, CommandProcessor, PrivateCommand
+            chart::Chart, long::Long, mint::Mint, settings::Settings, short::Short, start::Start, terminal::Terminal, wallet::Wallet, CommandProcessor, PrivateCommand
         },
         states::{
             ask_slippage::AskSlippage, long_pair::LongPair, place_order_quote::PlaceOrderQuote, short_pair::ShortPair, withdraw_address::WithdrawAddress, withdraw_amount::WithdrawAmount, PendingState, StateProcessor
@@ -100,7 +100,8 @@ async fn private_commands_handler(
         PrivateCommand::Long => Box::new(Long),
         PrivateCommand::Short => Box::new(Short),
         PrivateCommand::Settings => Box::new(Settings),
-        PrivateCommand::Terminal => Box::new(Terminal)
+        PrivateCommand::Terminal => Box::new(Terminal),
+        PrivateCommand::Chart => Box::new(Chart)
     };
     if let Err(err) = command_processor.process(cfg, bot.clone(), msg).await {
         tracing::error!("Command failed: {:?}", err);
