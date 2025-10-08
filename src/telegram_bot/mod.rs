@@ -2,35 +2,60 @@ pub mod actions;
 pub mod commands;
 pub mod states;
 
-use std::{collections::HashMap, str::FromStr, sync::Arc, time::Duration};
+use std::{ collections::HashMap, str::FromStr, sync::Arc, time::Duration };
 
 use futures_util::lock::Mutex;
-use teloxide::{prelude::*, types::Me, utils::command::BotCommands};
+use teloxide::{ prelude::*, types::Me, utils::command::BotCommands };
 use tokio::time::sleep;
 
 use crate::{
-    cache::{Cache, ICache},
+    cache::{ Cache, ICache },
     config::Config,
     telegram_bot::{
         actions::{
-            CallbackQueryProcessor, UserAction, accounts::Accounts, add_to_group::AddToGroup,
-            balances::Balances, change_degen_mode::DegenMode, close::Close,
-            create_trading_account::CreateTradingAccount, export_pk::ExportPk,
-            join_existing_clan::JoinExistingClan, order_leverage::OrderLeverage,
-            place_order::PlaceOrder, slippage::Slippage, stats::Stats, transfer::Transfer,
-            update_slippage::UpdateSlippage, withdraw::Withdraw,
+            accounts::Accounts,
+            add_to_group::AddToGroup,
+            balances::Balances,
+            change_degen_mode::DegenMode,
+            close::Close,
+            create_trading_account::CreateTradingAccount,
+            export_pk::ExportPk,
+            join_existing_clan::JoinExistingClan,
+            order_leverage::OrderLeverage,
+            place_order::PlaceOrder,
+            slippage::Slippage,
+            stats::Stats,
+            transfer::Transfer,
+            update_slippage::UpdateSlippage,
+            withdraw::Withdraw,
+            CallbackQueryProcessor,
+            UserAction,
         },
         commands::{
-            CommandProcessor, PrivateCommand, chart::Chart, long::Long, mint::Mint,
-            settings::Settings, short::Short, start::Start, terminal::Terminal, wallet::Wallet,
+            chart::Chart,
+            long::Long,
+            mint::Mint,
+            positions::Positions,
+            settings::Settings,
+            short::Short,
+            start::Start,
+            terminal::Terminal,
+            wallet::Wallet,
+            CommandProcessor,
+            PrivateCommand,
         },
         states::{
-            PendingState, StateProcessor, ask_slippage::AskSlippage, long_pair::LongPair,
-            place_order_quote::PlaceOrderQuote, short_pair::ShortPair,
-            withdraw_address::WithdrawAddress, withdraw_amount::WithdrawAmount,
+            ask_slippage::AskSlippage,
+            long_pair::LongPair,
+            place_order_quote::PlaceOrderQuote,
+            short_pair::ShortPair,
+            withdraw_address::WithdrawAddress,
+            withdraw_amount::WithdrawAmount,
+            PendingState,
+            StateProcessor,
         },
     },
-    utils::{aptos_client::AptosClient, database_utils::ArcDbPool},
+    utils::{ aptos_client::AptosClient, database_utils::ArcDbPool },
 };
 
 pub struct TelegramBot<TCache: ICache> {
@@ -41,15 +66,12 @@ pub struct TelegramBot<TCache: ICache> {
     pub state: Arc<Mutex<HashMap<ChatId, PendingState>>>,
 }
 
-impl<TCache> TelegramBot<TCache>
-where
-    TCache: ICache + 'static,
-{
+impl<TCache> TelegramBot<TCache> where TCache: ICache + 'static {
     pub fn new(
         config: Arc<Config>,
         pool: ArcDbPool,
         aptos_client: Arc<AptosClient>,
-        cache: Arc<TCache>,
+        cache: Arc<TCache>
     ) -> Self {
         Self {
             pool,
@@ -64,15 +86,16 @@ where
         tracing::info!("Starting telegram bot...");
         let bot = Bot::new(&self.config.bot_config.token);
 
-        bot.set_my_commands(PrivateCommand::bot_commands())
-            .await
-            .expect("Failed to set bot commands");
+        bot.set_my_commands(PrivateCommand::bot_commands()).await.expect(
+            "Failed to set bot commands"
+        );
 
-        let handler = dptree::entry()
+        let handler = dptree
+            ::entry()
             .branch(
                 Update::filter_message()
                     .filter_command::<PrivateCommand>()
-                    .endpoint(private_commands_handler),
+                    .endpoint(private_commands_handler)
             )
             .branch(Update::filter_callback_query().endpoint(handle_callback_query))
             .branch(Update::filter_message().endpoint(input_handler));
@@ -81,13 +104,12 @@ where
         Dispatcher::builder(bot, handler)
             .dependencies(dptree::deps![arc_telegram_bot])
             .default_handler(|upd| async move { tracing::warn!("Unhandled update: {upd:?}") })
-            .error_handler(LoggingErrorHandler::with_custom_text(
-                "An error has occured in the dispatcher",
-            ))
+            .error_handler(
+                LoggingErrorHandler::with_custom_text("An error has occured in the dispatcher")
+            )
             .enable_ctrlc_handler()
             .build()
-            .dispatch()
-            .await;
+            .dispatch().await;
 
         Ok(())
     }
@@ -98,7 +120,7 @@ async fn private_commands_handler(
     bot: Bot,
     _me: Me,
     msg: Message,
-    cmd: PrivateCommand,
+    cmd: PrivateCommand
 ) -> anyhow::Result<()> {
     let chat_id = msg.chat.id;
     let command_processor: Box<dyn CommandProcessor + Send + Sync> = match cmd {
@@ -110,6 +132,7 @@ async fn private_commands_handler(
         PrivateCommand::Settings => Box::new(Settings),
         PrivateCommand::Terminal => Box::new(Terminal),
         PrivateCommand::Chart => Box::new(Chart),
+        PrivateCommand::Positions => Box::new(Positions),
     };
     if let Err(err) = command_processor.process(cfg, bot.clone(), msg).await {
         tracing::error!("Command failed: {:?}", err);
@@ -130,104 +153,90 @@ async fn private_commands_handler(
 async fn handle_callback_query(
     cfg: Arc<TelegramBot<Cache>>,
     bot: Bot,
-    query: CallbackQuery,
+    query: CallbackQuery
 ) -> anyhow::Result<()> {
     if let Some(ref data) = query.data {
-        let query_processor: Option<Box<dyn CallbackQueryProcessor + Send + Sync>> =
-            match <UserAction as FromStr>::from_str(&data) {
-                Ok(UserAction::CreateTradingAccount) => Some(Box::new(CreateTradingAccount)),
-                Ok(UserAction::AddToGroup) => Some(Box::new(AddToGroup)),
-                Ok(UserAction::JoinExistingClan) => Some(Box::new(JoinExistingClan)),
-                Ok(UserAction::Order {
+        let query_processor: Option<Box<dyn CallbackQueryProcessor + Send + Sync>> = match
+            <UserAction as FromStr>::from_str(&data)
+        {
+            Ok(UserAction::CreateTradingAccount) => Some(Box::new(CreateTradingAccount)),
+            Ok(UserAction::AddToGroup) => Some(Box::new(AddToGroup)),
+            Ok(UserAction::JoinExistingClan) => Some(Box::new(JoinExistingClan)),
+            Ok(UserAction::Order { market, order_type, leverage }) => {
+                tracing::info!(
+                    "Order callback received: market={}, type={}, leverage={}",
                     market,
                     order_type,
-                    leverage,
-                }) => {
-                    tracing::info!(
-                        "Order callback received: market={}, type={}, leverage={}",
-                        market,
-                        order_type,
-                        leverage
-                    );
-                    Some(Box::new(OrderLeverage {
+                    leverage
+                );
+                Some(
+                    Box::new(OrderLeverage {
                         market,
                         order_type,
                         leverage,
-                    }))
-                }
-                Ok(UserAction::ConfirmOrder {
+                    })
+                )
+            }
+            Ok(UserAction::ConfirmOrder { market, order_type, leverage, amount }) => {
+                tracing::info!(
+                    "Confirm Order callback received: market={}, type={}, leverage={}, amount={}",
                     market,
                     order_type,
                     leverage,
-                    amount,
-                }) => {
-                    tracing::info!(
-                        "Confirm Order callback received: market={}, type={}, leverage={}, amount={}",
-                        market,
-                        order_type,
-                        leverage,
-                        amount
-                    );
-                    Some(Box::new(PlaceOrder {
+                    amount
+                );
+                Some(
+                    Box::new(PlaceOrder {
                         market,
                         order_type,
                         leverage,
                         amount,
-                    }))
-                }
-                Ok(UserAction::ChangeDegenMode {
-                    change_to,
-                    user_id,
-                    token,
-                }) => {
-                    tracing::info!("Degen mode change callback received: to={}", change_to);
-                    Some(Box::new(DegenMode {
+                    })
+                )
+            }
+            Ok(UserAction::ChangeDegenMode { change_to, user_id, token }) => {
+                tracing::info!("Degen mode change callback received: to={}", change_to);
+                Some(
+                    Box::new(DegenMode {
                         change_to,
                         user_id,
                         token,
-                    }))
-                }
-                Ok(UserAction::ExportPk) => Some(Box::new(ExportPk)),
-                Ok(UserAction::Accounts { user_id, token }) => {
-                    tracing::info!(
-                        "Accounts callback received: user_id={}, token={}",
-                        user_id,
-                        token
-                    );
-                    Some(Box::new(Accounts { user_id, token }))
-                }
-                Ok(UserAction::Slippage) => Some(Box::new(Slippage)),
-                Ok(UserAction::Stats) => Some(Box::new(Stats)),
-                Ok(UserAction::Withdraw { user_id, token }) => {
-                    tracing::info!(
-                        "Withdraw callback received: user_id={}, token={}",
-                        user_id,
-                        token
-                    );
-                    Some(Box::new(Withdraw { user_id, token }))
-                }
-                Ok(UserAction::Transfer { user_id }) => {
-                    tracing::info!("Transfer callback received: user_id={}", user_id);
-                    Some(Box::new(Transfer { user_id }))
-                }
-                Ok(UserAction::Balances { user_id }) => {
-                    tracing::info!("Balances callback received: user_id={}", user_id);
-                    Some(Box::new(Balances { user_id }))
-                }
-                Ok(UserAction::Close) => Some(Box::new(Close)),
-                Ok(UserAction::UpdateSlippage) => Some(Box::new(UpdateSlippage)),
-                Err(_) => {
-                    tracing::warn!("Unknown callback: {}", data);
-                    None
-                }
-            };
+                    })
+                )
+            }
+            Ok(UserAction::ExportPk) => Some(Box::new(ExportPk)),
+            Ok(UserAction::Accounts { user_id, token }) => {
+                tracing::info!("Accounts callback received: user_id={}, token={}", user_id, token);
+                Some(Box::new(Accounts { user_id, token }))
+            }
+            Ok(UserAction::Slippage) => Some(Box::new(Slippage)),
+            Ok(UserAction::Stats) => Some(Box::new(Stats)),
+            Ok(UserAction::Withdraw { user_id, token }) => {
+                tracing::info!("Withdraw callback received: user_id={}, token={}", user_id, token);
+                Some(Box::new(Withdraw { user_id, token }))
+            }
+            Ok(UserAction::Transfer { user_id }) => {
+                tracing::info!("Transfer callback received: user_id={}", user_id);
+                Some(Box::new(Transfer { user_id }))
+            }
+            Ok(UserAction::Balances { user_id }) => {
+                tracing::info!("Balances callback received: user_id={}", user_id);
+                Some(Box::new(Balances { user_id }))
+            }
+            Ok(UserAction::Close) => Some(Box::new(Close)),
+            Ok(UserAction::UpdateSlippage) => Some(Box::new(UpdateSlippage)),
+            Err(_) => {
+                tracing::warn!("Unknown callback: {}", data);
+                None
+            }
+        };
 
         if let Some(processor) = query_processor {
             if let Err(err) = processor.process(cfg, bot.clone(), query.clone()).await {
                 tracing::error!("Callback processing failed: {:?}", err);
-                let msg = query
-                    .message
-                    .ok_or_else(|| anyhow::anyhow!("Message missing in callback query"))?;
+                let msg = query.message.ok_or_else(||
+                    anyhow::anyhow!("Message missing in callback query")
+                )?;
                 send_temporary_message(&bot, msg.chat().id, format!("{}", err), 15).await?;
             }
         }
@@ -238,7 +247,9 @@ async fn handle_callback_query(
 async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> anyhow::Result<()> {
     let text = match msg.text() {
         Some(t) => t.to_string(),
-        None => return Ok(()),
+        None => {
+            return Ok(());
+        }
     };
 
     let chat_id = msg.chat.id;
@@ -252,28 +263,22 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
         let state_processor: Box<dyn StateProcessor + Send + Sync> = match state {
             PendingState::WaitingForLongPair => Box::new(LongPair),
             PendingState::WaitingForShortPair => Box::new(ShortPair),
-            PendingState::WaitingForOrderMargin {
-                order_type,
-                market,
-                leverage,
-            } => Box::new(PlaceOrderQuote {
-                market,
-                order_type,
-                leverage,
-            }),
+            PendingState::WaitingForOrderMargin { order_type, market, leverage } =>
+                Box::new(PlaceOrderQuote {
+                    market,
+                    order_type,
+                    leverage,
+                }),
             PendingState::WaitingForSlippage => Box::new(AskSlippage),
             PendingState::WaitingForWithdrawAddress { user_id, token } => {
                 Box::new(WithdrawAddress { user_id, token })
             }
-            PendingState::WaitingForWithdrawAmount {
-                user_id,
-                token,
-                address,
-            } => Box::new(WithdrawAmount {
-                user_id,
-                token,
-                address,
-            }),
+            PendingState::WaitingForWithdrawAmount { user_id, token, address } =>
+                Box::new(WithdrawAmount {
+                    user_id,
+                    token,
+                    address,
+                }),
         };
         if let Err(err) = state_processor.process(cfg, bot.clone(), msg, text).await {
             tracing::error!("Command failed: {:?}", err);
@@ -287,7 +292,7 @@ pub async fn send_temporary_message(
     bot: &Bot,
     chat_id: ChatId,
     text: String,
-    duration_secs: u64,
+    duration_secs: u64
 ) -> anyhow::Result<()> {
     let sent_message = bot.send_message(chat_id, text).await?;
 
@@ -306,11 +311,7 @@ pub fn escape_markdown_v2(text: &str) -> String {
     let special = r#"_[]()~`>#+-=|{}.!""#;
     text.chars()
         .map(|c| {
-            if special.contains(c) {
-                format!(r"\{}", c)
-            } else {
-                c.to_string()
-            }
+            if special.contains(c) { format!(r"\{}", c) } else { c.to_string() }
         })
         .collect()
 }

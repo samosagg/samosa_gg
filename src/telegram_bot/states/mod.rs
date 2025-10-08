@@ -7,7 +7,7 @@ pub mod withdraw_amount;
 
 use uuid::Uuid;
 
-use crate::{cache::Cache, telegram_bot::TelegramBot};
+use crate::{ cache::Cache, telegram_bot::TelegramBot };
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -38,6 +38,6 @@ pub trait StateProcessor {
         cfg: Arc<TelegramBot<Cache>>,
         bot: teloxide::Bot,
         msg: teloxide::types::Message,
-        text: String,
+        text: String
     ) -> anyhow::Result<()>;
 }

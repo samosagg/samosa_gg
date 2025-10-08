@@ -6,12 +6,12 @@ pub mod short;
 pub mod start;
 pub mod terminal;
 pub mod wallet;
-
+pub mod positions;
 use std::sync::Arc;
 
 use teloxide::utils::command::BotCommands;
 
-use crate::{cache::Cache, telegram_bot::TelegramBot};
+use crate::{ cache::Cache, telegram_bot::TelegramBot };
 
 #[async_trait::async_trait]
 pub trait CommandProcessor {
@@ -19,15 +19,12 @@ pub trait CommandProcessor {
         &self,
         cfg: Arc<TelegramBot<Cache>>,
         bot: teloxide::Bot,
-        msg: teloxide::types::Message,
+        msg: teloxide::types::Message
     ) -> anyhow::Result<()>;
 }
 
 #[derive(BotCommands, Clone)]
-#[command(
-    rename_rule = "lowercase",
-    description = "The following commands are supported:"
-)]
+#[command(rename_rule = "lowercase", description = "The following commands are supported:")]
 pub enum PrivateCommand {
     #[command(aliases = ["help", "h"], description = "Setup your pace.trade account")]
     Start,
@@ -45,4 +42,6 @@ pub enum PrivateCommand {
     Terminal,
     #[command(description = "See chart")]
     Chart,
+    #[command(description = "See postions")]
+    Positions,
 }

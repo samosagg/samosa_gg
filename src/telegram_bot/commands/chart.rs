@@ -141,7 +141,7 @@ impl CommandProcessor for Chart {
         };
 
         // Generate chart
-        let path = format!("plotters/chart-{}-{}.png", interval, msg.chat.id);
+        let path = format!("plotters/chart-{}-{}.png", interval, msg.id);
         let output_path = path.clone();
         let chart_candles = candles.clone();
         let chart_interval = interval.clone();
@@ -177,7 +177,7 @@ impl CommandProcessor for Chart {
                     .margin(20)
                     .caption("", ("monospace", 20).into_font().color(&WHITE))
                     .x_label_area_size(30)
-                    .y_label_area_size(40)
+                    .right_y_label_area_size(40)
                     .build_cartesian_2d(x_min..x_max, y_min..y_max)
                     .unwrap();
 
@@ -200,6 +200,7 @@ impl CommandProcessor for Chart {
                     .axis_style(&WHITE.mix(0.8))
                     .x_label_style(("monospace", 12).into_font().color(&WHITE))
                     .y_label_style(("monospace", 12).into_font().color(&WHITE))
+                    .set_all_tick_mark_size(3)
                     .draw()
                     .unwrap();
 
@@ -228,6 +229,10 @@ impl CommandProcessor for Chart {
 
         // Send the chart image
         bot.send_photo(msg.chat.id, InputFile::file(&path)).await?;
+
+        if let Err(e) = tokio::fs::remove_file(&path).await {
+            tracing::warn!("Failed to delete chart file {}: {}", path, e);
+        }
 
         Ok(())
     }
