@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use crate::{
     cache::Cache,
-    db_models::{users::User, wallets::Wallet as DbWallet},
+    db_models::{subaccounts::SubAccount, tokens::Token, users::User, wallets::Wallet as DbWallet},
     telegram_bot::{
-        TelegramBot, build_text_for_contact_support,
-        commands::{CommandProcessor, mint::build_text_for_wallet_not_created},
+        actions::UserAction, build_text_for_contact_support, commands::{mint::build_text_for_wallet_not_created, CommandProcessor}, TelegramBot
     },
     utils::{database_connection::get_db_connection, view_requests::view_fa_balance_request},
 };
 use anyhow::Context;
-use teloxide::prelude::*;
+use serde_json::to_string;
+use teloxide::{prelude::*, types::{InlineKeyboardButton, InlineKeyboardMarkup}};
 use teloxide::types::ParseMode;
 
 pub struct Wallet;
@@ -24,6 +24,8 @@ impl CommandProcessor for Wallet {
         msg: Message,
     ) -> anyhow::Result<()> {
         let from = msg.from.context("Message missing sender")?;
+        let chat_id = msg.chat.id;
+
         let mut conn = get_db_connection(&cfg.pool)
             .await
             .context("Failed to get database connection")?;
@@ -49,20 +51,43 @@ impl CommandProcessor for Wallet {
             return Ok(());
         };
 
+        let subaccounts = SubAccount::get_subaccounts_by_wallet_id(db_wallet.id, &mut conn).await?;
+
+        let maybe_token = Token::get_token_by_symbol(db_user.token, &mut conn).await?;
+        let db_token = if let Some(token) = maybe_token {
+            token 
+        } else {
+            bot.send_message(msg.chat.id, build_text_for_contact_support())
+                .parse_mode(ParseMode::MarkdownV2)
+                .await?;
+            return Ok(());
+        };
+
         let request = view_fa_balance_request(
-            "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02",
+            &db_token.address,
             &db_wallet.address,
         )?;
         let response = cfg.aptos_client.view(&request).await?;
-        let balance_json = response
-            .get(0)
-            .ok_or_else(|| anyhow::anyhow!("Expected a balance value but received none."))?
-            .clone();
+        let balance_json = response.get(0).cloned().unwrap_or(serde_json::json!("0"));
         let balance: u64 = serde_json::from_value::<String>(balance_json)?.parse::<u64>()?;
 
-        let text = build_text_for_wallet_with_balance(&db_wallet.address, balance / 10u64.pow(6));
-
-        bot.send_message(msg.chat.id, text)
+        let mut text = build_text_for_wallet_with_balance(&db_wallet.address, balance / 10u64.pow(db_token.decimals as u32));
+        if !subaccounts.is_empty() {
+            text.push_str("\n\n**SubAccounts**");
+            for (idx, subaccount) in subaccounts.iter().enumerate() {
+                text.push_str(&format!("\n{} `{}`", idx + 1, subaccount.address));
+            }
+        }
+        bot.send_message(chat_id, text)
+            .reply_markup(
+                InlineKeyboardMarkup::new(
+                    vec![
+                        vec![
+                            InlineKeyboardButton::callback("Deposit to Sub Account", UserAction::DepositToSubAccount { subaccount_id: None }.to_string())
+                        ]
+                    ]
+                )
+            )
             .parse_mode(ParseMode::MarkdownV2)
             .await?;
 

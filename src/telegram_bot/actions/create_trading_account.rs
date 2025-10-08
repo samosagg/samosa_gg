@@ -30,7 +30,9 @@ impl CallbackQueryProcessor for CreateTradingAccount {
             .message
             .ok_or_else(|| anyhow::anyhow!("Message missing in callback query"))?;
         let from = callback_query.from;
+        let chat_id = msg.chat().id;
         let telegram_id = from.id.0 as i64;
+
         let wallet_name = format!("apt-wallet-{}", telegram_id);
         let (wallet_id, wallet_address, wallet_public_key) = cfg
             .aptos_client
@@ -47,6 +49,7 @@ impl CallbackQueryProcessor for CreateTradingAccount {
             wallet_id,
             wallet_address.clone(),
             wallet_public_key.clone(),
+            true
         );
 
         let create_user_query = diesel::insert_into(users::table)
@@ -57,25 +60,26 @@ impl CallbackQueryProcessor for CreateTradingAccount {
             .on_conflict_do_nothing();
 
         let mut conn = get_db_connection(&cfg.pool).await?;
-        execute_with_better_error(&mut conn, vec![create_user_query]).await?;
-        execute_with_better_error(&mut conn, vec![create_wallet_query]).await?;
-
-        bot.edit_message_text(
-            msg.chat().id,
-            msg.id(),
-            build_text_for_existing_user(&wallet_address),
-        )
-        .reply_markup(build_keyboard_for_existing_user())
-        .parse_mode(ParseMode::MarkdownV2)
-        .await?;
 
         let payload = delegate_trading_to(&cfg.config.contract_address, &wallet_address)?;
+        let signed_txn = cfg.aptos_client.sign_txn_with_turnkey_and_fee_payer(
+            &wallet_address, 
+            &wallet_public_key, 
+            payload
+        ).await?;
+
+        // let vm_error = cfg.aptos_client.simulate_transaction(&signed_txn).await?;
+        // if let Some(err) = vm_error {
+        //     bot.send_message(chat_id, err).await?;
+        //     return Ok(())
+        // } else {
+        //     println!("Simulation success");
+        // };
+
         let hash = cfg
             .aptos_client
-            .sign_submit_txn_with_turnkey_and_fee_payer(
-                &wallet_address,
-                &wallet_public_key,
-                payload,
+            .submit_transaction_and_wait(
+                signed_txn
             )
             .await?;
 
@@ -84,6 +88,18 @@ impl CallbackQueryProcessor for CreateTradingAccount {
             hash,
             wallet_address
         );
+
+         bot.edit_message_text(
+            chat_id,
+            msg.id(),
+            build_text_for_existing_user(&wallet_address),
+        )
+        .reply_markup(build_keyboard_for_existing_user())
+        .parse_mode(ParseMode::MarkdownV2)
+        .await?;
+
+        execute_with_better_error(&mut conn, vec![create_user_query]).await?;
+        execute_with_better_error(&mut conn, vec![create_wallet_query]).await?;
         Ok(())
     }
 }

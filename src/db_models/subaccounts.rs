@@ -39,6 +39,18 @@ impl SubAccount {
             .await
             .optional()
     }
+
+    pub async fn get_by_id(
+        id: Uuid,
+        conn: &mut DbPoolConnection<'_>
+    ) -> diesel::QueryResult<Option<Self>> {
+        subaccounts::table 
+            .filter(subaccounts::id.eq(id))
+            .select(subaccounts::all_columns)
+            .first::<Self>(conn)
+            .await
+            .optional()
+    }
 }
 
 #[derive(AsChangeset, Debug, Insertable)]

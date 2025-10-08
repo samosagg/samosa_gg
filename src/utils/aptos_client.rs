@@ -1,4 +1,4 @@
-use anyhow::{Context, Ok};
+use anyhow::Context;
 use aptos_crypto::{SigningKey, ValidCryptoMaterialStringExt, ed25519::*, traits::signing_message};
 use aptos_sdk::coin_client::TransferOptions;
 use aptos_sdk::rest_client::Client;
@@ -127,12 +127,12 @@ impl AptosClient {
         Ok(sender_public_key_str)
     }
 
-    pub async fn sign_submit_txn_with_turnkey_and_fee_payer(
+    pub async fn sign_txn_with_turnkey_and_fee_payer(
         &self,
         sender_address: &str,
         sender_public_key: &str,
         payload: TransactionPayload,
-    ) -> anyhow::Result<String> {
+    ) -> anyhow::Result<SignedTransaction> {
         let options = TransferOptions::default();
         let sender = AccountAddress::from_hex_literal(sender_address)?;
 
@@ -202,17 +202,31 @@ impl AptosClient {
             sponsor_authenticator,
         );
 
-        let pending_transaction = self.client.submit(&signed_txn).await?;
+        Ok(signed_txn)
+    }
+
+    pub async fn view(&self, request: &ViewRequest) -> anyhow::Result<Vec<serde_json::Value>> {
+        let response = self.client.view(request, None).await?;
+        Ok(response.into_inner())
+    }
+
+    pub async fn simulate_transaction(&self, txn: &SignedTransaction) -> anyhow::Result<Option<String>> {
+        let simulation_response = self.client.simulate(txn).await?;
+        let simulation_result = simulation_response.inner()[0].clone();
+        let mut err: Option<String> = None;
+        if !simulation_result.info.success {
+            err = Some(simulation_result.info.vm_status) 
+        }
+        Ok(err)
+    }
+
+    pub async fn submit_transaction_and_wait(&self, txn: SignedTransaction) -> anyhow::Result<String> {
+        let pending_transaction = self.client.submit(&txn).await?;
 
         self.client
             .wait_for_transaction(pending_transaction.inner())
             .await?;
 
         Ok(pending_transaction.inner().hash.to_string())
-    }
-
-    pub async fn view(&self, request: &ViewRequest) -> anyhow::Result<Vec<serde_json::Value>> {
-        let response = self.client.view(request, None).await?;
-        Ok(response.into_inner())
     }
 }

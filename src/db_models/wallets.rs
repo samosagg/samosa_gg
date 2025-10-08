@@ -40,6 +40,18 @@ impl Wallet {
             .await
             .optional()
     }
+
+     pub async fn get_by_id(
+        id: Uuid,
+        conn: &mut DbPoolConnection<'_>,
+    ) -> diesel::QueryResult<Option<Self>> {
+        wallets::table
+            .filter(wallets::id.eq(id))
+            .select(wallets::all_columns)
+            .first::<Self>(conn)
+            .await
+            .optional()
+    }
 }
 
 #[derive(AsChangeset, Debug, Insertable)]
@@ -51,6 +63,7 @@ pub struct NewWallet {
     pub wallet_id: String,
     pub address: String,
     pub public_key: String,
+    pub is_primary: bool
 }
 
 impl NewWallet {
@@ -59,6 +72,7 @@ impl NewWallet {
         wallet_id: String,
         address: String,
         public_key: String,
+        is_primary: bool
     ) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -66,6 +80,7 @@ impl NewWallet {
             wallet_id,
             address,
             public_key,
+            is_primary
         }
     }
 }

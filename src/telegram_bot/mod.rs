@@ -13,46 +13,13 @@ use crate::{
     config::Config,
     telegram_bot::{
         actions::{
-            accounts::Accounts,
-            add_to_group::AddToGroup,
-            balances::Balances,
-            change_degen_mode::DegenMode,
-            close::Close,
-            create_trading_account::CreateTradingAccount,
-            export_pk::ExportPk,
-            join_existing_clan::JoinExistingClan,
-            order_leverage::OrderLeverage,
-            place_order::PlaceOrder,
-            slippage::Slippage,
-            stats::Stats,
-            transfer::Transfer,
-            update_slippage::UpdateSlippage,
-            withdraw::Withdraw,
-            CallbackQueryProcessor,
-            UserAction,
+            accounts::Accounts, add_to_group::AddToGroup, balances::Balances, change_degen_mode::DegenMode, close::Close, create_trading_account::CreateTradingAccount, deposit_to_subaccount::DepositToSubAccount, export_pk::ExportPk, join_existing_clan::JoinExistingClan, order_leverage::OrderLeverage, place_order::PlaceOrder, slippage::Slippage, stats::Stats, transfer::Transfer, update_slippage::UpdateSlippage, withdraw::Withdraw, CallbackQueryProcessor, UserAction
         },
         commands::{
-            chart::Chart,
-            long::Long,
-            mint::Mint,
-            positions::Positions,
-            settings::Settings,
-            short::Short,
-            start::Start,
-            terminal::Terminal,
-            wallet::Wallet,
-            CommandProcessor,
-            PrivateCommand,
+            chart::Chart, long::Long, mint::Mint, positions::Positions, settings::Settings, short::Short, start::Start, terminal::Terminal, wallet::Wallet, CommandProcessor, PrivateCommand
         },
         states::{
-            ask_slippage::AskSlippage,
-            long_pair::LongPair,
-            place_order_quote::PlaceOrderQuote,
-            short_pair::ShortPair,
-            withdraw_address::WithdrawAddress,
-            withdraw_amount::WithdrawAmount,
-            PendingState,
-            StateProcessor,
+            ask_slippage::AskSlippage, deposit_to_sub_amount::DepositToSubaccountAmount, long_pair::LongPair, place_order_quote::PlaceOrderQuote, short_pair::ShortPair, withdraw_address::WithdrawAddress, withdraw_amount::WithdrawAmount, PendingState, StateProcessor
         },
     },
     utils::{ aptos_client::AptosClient, database_utils::ArcDbPool },
@@ -201,35 +168,43 @@ async fn handle_callback_query(
                         change_to,
                         user_id,
                         token,
-                    })
-                )
-            }
-            Ok(UserAction::ExportPk) => Some(Box::new(ExportPk)),
-            Ok(UserAction::Accounts { user_id, token }) => {
-                tracing::info!("Accounts callback received: user_id={}, token={}", user_id, token);
-                Some(Box::new(Accounts { user_id, token }))
-            }
-            Ok(UserAction::Slippage) => Some(Box::new(Slippage)),
-            Ok(UserAction::Stats) => Some(Box::new(Stats)),
-            Ok(UserAction::Withdraw { user_id, token }) => {
-                tracing::info!("Withdraw callback received: user_id={}, token={}", user_id, token);
-                Some(Box::new(Withdraw { user_id, token }))
-            }
-            Ok(UserAction::Transfer { user_id }) => {
-                tracing::info!("Transfer callback received: user_id={}", user_id);
-                Some(Box::new(Transfer { user_id }))
-            }
-            Ok(UserAction::Balances { user_id }) => {
-                tracing::info!("Balances callback received: user_id={}", user_id);
-                Some(Box::new(Balances { user_id }))
-            }
-            Ok(UserAction::Close) => Some(Box::new(Close)),
-            Ok(UserAction::UpdateSlippage) => Some(Box::new(UpdateSlippage)),
-            Err(_) => {
-                tracing::warn!("Unknown callback: {}", data);
-                None
-            }
-        };
+                    }))
+                }
+                Ok(UserAction::ExportPk) => Some(Box::new(ExportPk)),
+                Ok(UserAction::Accounts { user_id, token }) => {
+                    tracing::info!(
+                        "Accounts callback received: user_id={}, token={}",
+                        user_id,
+                        token
+                    );
+                    Some(Box::new(Accounts { user_id, token }))
+                }
+                Ok(UserAction::Slippage) => Some(Box::new(Slippage)),
+                Ok(UserAction::Stats) => Some(Box::new(Stats)),
+                Ok(UserAction::Withdraw { user_id, token }) => {
+                    tracing::info!(
+                        "Withdraw callback received: user_id={}, token={}",
+                        user_id,
+                        token
+                    );
+                    Some(Box::new(Withdraw { user_id, token }))
+                }
+                Ok(UserAction::Transfer { user_id }) => {
+                    tracing::info!("Transfer callback received: user_id={}", user_id);
+                    Some(Box::new(Transfer { user_id }))
+                }
+                Ok(UserAction::Balances { user_id }) => {
+                    tracing::info!("Balances callback received: user_id={}", user_id);
+                    Some(Box::new(Balances { user_id }))
+                }
+                Ok(UserAction::Close) => Some(Box::new(Close)),
+                Ok(UserAction::UpdateSlippage) => Some(Box::new(UpdateSlippage)),
+                Ok(UserAction::DepositToSubAccount { subaccount_id }) => Some(Box::new(DepositToSubAccount { subaccount_id })),
+                Err(_) => {
+                    tracing::warn!("Unknown callback: {}", data);
+                    None
+                }
+            };
 
         if let Some(processor) = query_processor {
             if let Err(err) = processor.process(cfg, bot.clone(), query.clone()).await {
@@ -273,12 +248,18 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
             PendingState::WaitingForWithdrawAddress { user_id, token } => {
                 Box::new(WithdrawAddress { user_id, token })
             }
-            PendingState::WaitingForWithdrawAmount { user_id, token, address } =>
-                Box::new(WithdrawAmount {
-                    user_id,
-                    token,
-                    address,
-                }),
+            PendingState::WaitingForWithdrawAmount {
+                user_id,
+                token,
+                address,
+            } => Box::new(WithdrawAmount {
+                user_id,
+                token,
+                address,
+            }),
+            PendingState::WaitingForSubAccountDepositAmount { wallet_id, subaccount_id, token } => {
+                Box::new(DepositToSubaccountAmount{ wallet_id, subaccount_id, token })
+            }
         };
         if let Err(err) = state_processor.process(cfg, bot.clone(), msg, text).await {
             tracing::error!("Command failed: {:?}", err);

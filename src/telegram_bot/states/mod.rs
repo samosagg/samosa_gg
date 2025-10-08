@@ -4,6 +4,7 @@ pub mod place_order_quote;
 pub mod short_pair;
 pub mod withdraw_address;
 pub mod withdraw_amount;
+pub mod deposit_to_sub_amount;
 
 use uuid::Uuid;
 
@@ -29,6 +30,11 @@ pub enum PendingState {
         token: String,
         address: String,
     },
+    WaitingForSubAccountDepositAmount {
+        wallet_id: Uuid,
+        subaccount_id: Uuid,
+        token: String
+    }
 }
 
 #[async_trait::async_trait]

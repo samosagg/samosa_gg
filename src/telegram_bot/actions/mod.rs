@@ -13,6 +13,7 @@ pub mod stats;
 pub mod transfer;
 pub mod update_slippage;
 pub mod withdraw;
+pub mod deposit_to_subaccount;
 
 use std::{str::FromStr, sync::Arc};
 
@@ -73,6 +74,9 @@ pub enum UserAction {
     },
     Close,
     UpdateSlippage,
+    DepositToSubAccount {
+        subaccount_id: Option<Uuid>
+    }
 }
 
 impl ToString for UserAction {
@@ -115,6 +119,7 @@ impl ToString for UserAction {
             UserAction::Transfer { user_id } => format!("transfer|{}", user_id),
             UserAction::Close => "close".to_string(),
             UserAction::UpdateSlippage => "update_slippage".to_string(),
+            UserAction::DepositToSubAccount { subaccount_id} => format!("deposit_to_subaccount|{}", subaccount_id.map(|id| id.to_string()).unwrap_or_else(|| "".to_string())),
         }
     }
 }
@@ -184,6 +189,14 @@ impl FromStr for UserAction {
             }
             "update_slippage" => Ok(UserAction::UpdateSlippage),
             "close" => Ok(UserAction::Close),
+            "deposit_to_subaccount" if parts.len() == 2 => {
+                let subaccount_id = if parts[1].is_empty() {
+                    None
+                } else {
+                    Some(Uuid::parse_str(parts[1]).map_err(|_| ())?)
+                };
+                Ok(UserAction::DepositToSubAccount{ subaccount_id })
+            },
             _ => Err(()),
         }
     }

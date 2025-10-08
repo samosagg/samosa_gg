@@ -21,6 +21,8 @@ impl CommandProcessor for Mint {
         msg: Message,
     ) -> anyhow::Result<()> {
         let from = msg.from.context("Message missing sender")?;
+        let chat_id = msg.chat.id;
+
         let mut conn = get_db_connection(&cfg.pool)
             .await
             .context("Failed to get database connection")?;
@@ -35,7 +37,7 @@ impl CommandProcessor for Mint {
         };
 
         let primary_wallet_opt = Wallet::get_primary_wallet_by_user_id(user.id, &mut conn).await?;
-        let primary_wallet = if let Some(wallet) = primary_wallet_opt {
+        let db_wallet = if let Some(wallet) = primary_wallet_opt {
             wallet
         } else {
             bot.send_message(msg.chat.id, build_text_for_wallet_not_created())
@@ -49,24 +51,35 @@ impl CommandProcessor for Mint {
             .await?;
 
         let amount = 10000000u64;
-
         let payload = mint(
             &cfg.config.contract_address,
-            &primary_wallet.address,
+            &db_wallet.address,
             amount,
         )?;
+        let signed_txn = cfg.aptos_client.sign_txn_with_turnkey_and_fee_payer(
+            &db_wallet.address, 
+            &db_wallet.public_key, 
+            payload
+        ).await?;
+
+        // let vm_error = cfg.aptos_client.simulate_transaction(&signed_txn).await?;
+        // if let Some(err) = vm_error {
+        //     bot.send_message(chat_id, err).await?;
+        //     return Ok(())
+        // } else {
+        //     println!("Simulation success");
+        // };
+
         let hash = cfg
             .aptos_client
-            .sign_submit_txn_with_turnkey_and_fee_payer(
-                &primary_wallet.address,
-                &primary_wallet.public_key,
-                payload,
+            .submit_transaction_and_wait(
+                signed_txn
             )
             .await?;
         tracing::info!(
             "Minted usdc faucet: {}, sender({})",
             hash,
-            primary_wallet.address
+            db_wallet.address
         );
 
         bot.edit_message_text(
