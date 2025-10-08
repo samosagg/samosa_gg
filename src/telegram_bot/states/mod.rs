@@ -1,7 +1,8 @@
 pub mod ask_slippage;
 pub mod deposit_to_sub_amount;
 pub mod long_pair;
-pub mod place_order_quote;
+pub mod order_margin;
+pub mod order_pair;
 pub mod short_pair;
 pub mod withdraw_address;
 pub mod withdraw_amount;
@@ -16,9 +17,9 @@ pub enum PendingState {
     WaitingForLongPair,
     WaitingForShortPair,
     WaitingForOrderMargin {
-        order_type: String,
-        market: String,
-        leverage: u64,
+        is_long: bool,
+        market_name: String,
+        leverage: u8,
     },
     WaitingForSlippage,
     WaitingForWithdrawAddress {
@@ -34,6 +35,9 @@ pub enum PendingState {
         wallet_id: Uuid,
         subaccount_id: Uuid,
         token: String,
+    },
+    WaitingForOrderPair {
+        is_long: bool,
     },
 }
 

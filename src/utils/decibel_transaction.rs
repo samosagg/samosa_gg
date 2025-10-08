@@ -49,32 +49,27 @@ pub fn mint(
 }
 
 pub fn place_order_to_subaccount(
-    contract_address: &str,
-    subaccount: &str,
-    market_address: &str,
+    contract_addr: &str,
+    subaccount_addr: &str,
+    market_addr: &str,
     order_value: u64,
     order_size: u64,
     is_long: bool,
     leverage: u64,
 ) -> anyhow::Result<TransactionPayload> {
-    println!(
-        "subaccount={}, market_address={}, order_value={}, order_size={}, is_long={}, leverage={}",
-        subaccount, market_address, order_value, order_size, is_long, leverage
-    );
     let module = ModuleId::new(
-        AccountAddress::from_str(contract_address)?,
+        AccountAddress::from_str(contract_addr)?,
         Identifier::new("dex_accounts")?,
     );
     let args = vec![
-        bcs::to_bytes(&AccountAddress::from_str(subaccount)?)?,
-        bcs::to_bytes(&AccountAddress::from_str(market_address)?)?,
-        bcs::to_bytes(&1000)?,
-        bcs::to_bytes(&1000)?,
+        bcs::to_bytes(&AccountAddress::from_str(subaccount_addr)?)?,
+        bcs::to_bytes(&AccountAddress::from_str(market_addr)?)?,
+        bcs::to_bytes(&1000u64)?,
+        bcs::to_bytes(&1000u64)?,
         bcs::to_bytes(&false)?,
-        bcs::to_bytes(&1)?,
+        bcs::to_bytes(&2u8)?,
         bcs::to_bytes(&false)?,
-        // OptionType{ vec: vec![0] },
-        bcs::to_bytes(&None::<u64>)?,
+        bcs::to_bytes(&None::<String>)?,
         bcs::to_bytes(&None::<u64>)?,
         bcs::to_bytes(&None::<u64>)?,
         bcs::to_bytes(&None::<u64>)?,

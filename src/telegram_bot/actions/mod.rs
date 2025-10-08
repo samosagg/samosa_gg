@@ -1,5 +1,6 @@
 pub mod accounts;
 pub mod add_to_group;
+pub mod ask_order_amount;
 pub mod balances;
 pub mod change_degen_mode;
 pub mod close;
@@ -77,6 +78,11 @@ pub enum UserAction {
     DepositToSubAccount {
         subaccount_id: Option<Uuid>,
     },
+    MarketOrder {
+        is_long: bool,
+        market_name: String,
+        leverage: u8,
+    },
 }
 
 impl ToString for UserAction {
@@ -125,6 +131,11 @@ impl ToString for UserAction {
                     .map(|id| id.to_string())
                     .unwrap_or_else(|| "".to_string())
             ),
+            UserAction::MarketOrder {
+                is_long,
+                market_name,
+                leverage,
+            } => format!("mo|{}|{}|{}", is_long, market_name, leverage),
         }
     }
 }
@@ -201,6 +212,16 @@ impl FromStr for UserAction {
                     Some(Uuid::parse_str(parts[1]).map_err(|_| ())?)
                 };
                 Ok(UserAction::DepositToSubAccount { subaccount_id })
+            }
+            "mo" if parts.len() == 4 => {
+                let is_long = parts[1].parse::<bool>().map_err(|_| ())?;
+                let market_name = parts[2].to_string();
+                let leverage = parts[3].parse::<u8>().map_err(|_| ())?;
+                Ok(UserAction::MarketOrder {
+                    is_long,
+                    market_name,
+                    leverage,
+                })
             }
             _ => Err(()),
         }

@@ -14,8 +14,8 @@ use crate::{
     telegram_bot::{
         actions::{
             CallbackQueryProcessor, UserAction, accounts::Accounts, add_to_group::AddToGroup,
-            balances::Balances, change_degen_mode::DegenMode, close::Close,
-            create_trading_account::CreateTradingAccount,
+            ask_order_amount::AskOrderAmount, balances::Balances, change_degen_mode::DegenMode,
+            close::Close, create_trading_account::CreateTradingAccount,
             deposit_to_subaccount::DepositToSubAccount, export_pk::ExportPk,
             join_existing_clan::JoinExistingClan, order_leverage::OrderLeverage,
             place_order::PlaceOrder, slippage::Slippage, stats::Stats, transfer::Transfer,
@@ -29,7 +29,7 @@ use crate::{
         states::{
             PendingState, StateProcessor, ask_slippage::AskSlippage,
             deposit_to_sub_amount::DepositToSubaccountAmount, long_pair::LongPair,
-            place_order_quote::PlaceOrderQuote, short_pair::ShortPair,
+            order_margin::OrderMargin, order_pair::OrderPair, short_pair::ShortPair,
             withdraw_address::WithdrawAddress, withdraw_amount::WithdrawAmount,
         },
     },
@@ -223,6 +223,15 @@ async fn handle_callback_query(
                 Ok(UserAction::DepositToSubAccount { subaccount_id }) => {
                     Some(Box::new(DepositToSubAccount { subaccount_id }))
                 }
+                Ok(UserAction::MarketOrder {
+                    is_long,
+                    market_name,
+                    leverage,
+                }) => Some(Box::new(AskOrderAmount {
+                    market_name,
+                    is_long,
+                    leverage,
+                })),
                 Err(_) => {
                     tracing::warn!("Unknown callback: {}", data);
                     None
@@ -262,12 +271,12 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
             PendingState::WaitingForLongPair => Box::new(LongPair),
             PendingState::WaitingForShortPair => Box::new(ShortPair),
             PendingState::WaitingForOrderMargin {
-                order_type,
-                market,
+                is_long,
+                market_name,
                 leverage,
-            } => Box::new(PlaceOrderQuote {
-                market,
-                order_type,
+            } => Box::new(OrderMargin {
+                market_name,
+                is_long,
                 leverage,
             }),
             PendingState::WaitingForSlippage => Box::new(AskSlippage),
@@ -292,6 +301,7 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
                 subaccount_id,
                 token,
             }),
+            PendingState::WaitingForOrderPair { is_long } => Box::new(OrderPair { is_long }),
         };
         if let Err(err) = state_processor.process(cfg, bot.clone(), msg, text).await {
             tracing::error!("Command failed: {:?}", err);

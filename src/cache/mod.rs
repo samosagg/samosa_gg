@@ -9,7 +9,7 @@ pub struct Market {
     pub market_name: String,
     pub sz_decimals: u8,
     pub px_decimals: u8,
-    pub max_leverage: u64,
+    pub max_leverage: u8,
     pub max_open_interest: f64,
 }
 
