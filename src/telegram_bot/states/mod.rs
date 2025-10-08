@@ -1,14 +1,14 @@
 pub mod ask_slippage;
+pub mod deposit_to_sub_amount;
 pub mod long_pair;
 pub mod place_order_quote;
 pub mod short_pair;
 pub mod withdraw_address;
 pub mod withdraw_amount;
-pub mod deposit_to_sub_amount;
 
 use uuid::Uuid;
 
-use crate::{ cache::Cache, telegram_bot::TelegramBot };
+use crate::{cache::Cache, telegram_bot::TelegramBot};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -33,8 +33,8 @@ pub enum PendingState {
     WaitingForSubAccountDepositAmount {
         wallet_id: Uuid,
         subaccount_id: Uuid,
-        token: String
-    }
+        token: String,
+    },
 }
 
 #[async_trait::async_trait]
@@ -44,6 +44,6 @@ pub trait StateProcessor {
         cfg: Arc<TelegramBot<Cache>>,
         bot: teloxide::Bot,
         msg: teloxide::types::Message,
-        text: String
+        text: String,
     ) -> anyhow::Result<()>;
 }

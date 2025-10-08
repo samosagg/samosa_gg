@@ -49,7 +49,7 @@ impl CallbackQueryProcessor for CreateTradingAccount {
             wallet_id,
             wallet_address.clone(),
             wallet_public_key.clone(),
-            true
+            true,
         );
 
         let create_user_query = diesel::insert_into(users::table)
@@ -62,11 +62,10 @@ impl CallbackQueryProcessor for CreateTradingAccount {
         let mut conn = get_db_connection(&cfg.pool).await?;
 
         let payload = delegate_trading_to(&cfg.config.contract_address, &wallet_address)?;
-        let signed_txn = cfg.aptos_client.sign_txn_with_turnkey_and_fee_payer(
-            &wallet_address, 
-            &wallet_public_key, 
-            payload
-        ).await?;
+        let signed_txn = cfg
+            .aptos_client
+            .sign_txn_with_turnkey_and_fee_payer(&wallet_address, &wallet_public_key, payload)
+            .await?;
 
         // let vm_error = cfg.aptos_client.simulate_transaction(&signed_txn).await?;
         // if let Some(err) = vm_error {
@@ -78,9 +77,7 @@ impl CallbackQueryProcessor for CreateTradingAccount {
 
         let hash = cfg
             .aptos_client
-            .submit_transaction_and_wait(
-                signed_txn
-            )
+            .submit_transaction_and_wait(signed_txn)
             .await?;
 
         tracing::info!(
@@ -89,7 +86,7 @@ impl CallbackQueryProcessor for CreateTradingAccount {
             wallet_address
         );
 
-         bot.edit_message_text(
+        bot.edit_message_text(
             chat_id,
             msg.id(),
             build_text_for_existing_user(&wallet_address),

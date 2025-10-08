@@ -4,14 +4,20 @@ use crate::{
     cache::Cache,
     db_models::{subaccounts::SubAccount, tokens::Token, users::User, wallets::Wallet as DbWallet},
     telegram_bot::{
-        actions::UserAction, build_text_for_contact_support, commands::{mint::build_text_for_wallet_not_created, CommandProcessor}, TelegramBot
+        TelegramBot,
+        actions::UserAction,
+        build_text_for_contact_support,
+        commands::{CommandProcessor, mint::build_text_for_wallet_not_created},
     },
     utils::{database_connection::get_db_connection, view_requests::view_fa_balance_request},
 };
 use anyhow::Context;
 use serde_json::to_string;
-use teloxide::{prelude::*, types::{InlineKeyboardButton, InlineKeyboardMarkup}};
 use teloxide::types::ParseMode;
+use teloxide::{
+    prelude::*,
+    types::{InlineKeyboardButton, InlineKeyboardMarkup},
+};
 
 pub struct Wallet;
 
@@ -55,7 +61,7 @@ impl CommandProcessor for Wallet {
 
         let maybe_token = Token::get_token_by_symbol(db_user.token, &mut conn).await?;
         let db_token = if let Some(token) = maybe_token {
-            token 
+            token
         } else {
             bot.send_message(msg.chat.id, build_text_for_contact_support())
                 .parse_mode(ParseMode::MarkdownV2)
@@ -63,15 +69,15 @@ impl CommandProcessor for Wallet {
             return Ok(());
         };
 
-        let request = view_fa_balance_request(
-            &db_token.address,
-            &db_wallet.address,
-        )?;
+        let request = view_fa_balance_request(&db_token.address, &db_wallet.address)?;
         let response = cfg.aptos_client.view(&request).await?;
         let balance_json = response.get(0).cloned().unwrap_or(serde_json::json!("0"));
         let balance: u64 = serde_json::from_value::<String>(balance_json)?.parse::<u64>()?;
 
-        let mut text = build_text_for_wallet_with_balance(&db_wallet.address, balance / 10u64.pow(db_token.decimals as u32));
+        let mut text = build_text_for_wallet_with_balance(
+            &db_wallet.address,
+            balance / 10u64.pow(db_token.decimals as u32),
+        );
         if !subaccounts.is_empty() {
             text.push_str("\n\n**SubAccounts**");
             for (idx, subaccount) in subaccounts.iter().enumerate() {
@@ -79,15 +85,15 @@ impl CommandProcessor for Wallet {
             }
         }
         bot.send_message(chat_id, text)
-            .reply_markup(
-                InlineKeyboardMarkup::new(
-                    vec![
-                        vec![
-                            InlineKeyboardButton::callback("Deposit to Sub Account", UserAction::DepositToSubAccount { subaccount_id: None }.to_string())
-                        ]
-                    ]
-                )
-            )
+            .reply_markup(InlineKeyboardMarkup::new(vec![vec![
+                InlineKeyboardButton::callback(
+                    "Deposit to Sub Account",
+                    UserAction::DepositToSubAccount {
+                        subaccount_id: None,
+                    }
+                    .to_string(),
+                ),
+            ]]))
             .parse_mode(ParseMode::MarkdownV2)
             .await?;
 

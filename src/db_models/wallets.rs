@@ -41,7 +41,7 @@ impl Wallet {
             .optional()
     }
 
-     pub async fn get_by_id(
+    pub async fn get_by_id(
         id: Uuid,
         conn: &mut DbPoolConnection<'_>,
     ) -> diesel::QueryResult<Option<Self>> {
@@ -63,7 +63,7 @@ pub struct NewWallet {
     pub wallet_id: String,
     pub address: String,
     pub public_key: String,
-    pub is_primary: bool
+    pub is_primary: bool,
 }
 
 impl NewWallet {
@@ -72,7 +72,7 @@ impl NewWallet {
         wallet_id: String,
         address: String,
         public_key: String,
-        is_primary: bool
+        is_primary: bool,
     ) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -80,7 +80,7 @@ impl NewWallet {
             wallet_id,
             address,
             public_key,
-            is_primary
+            is_primary,
         }
     }
 }

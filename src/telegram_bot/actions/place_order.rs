@@ -13,7 +13,8 @@ use crate::{
     cache::{Cache, ICache},
     db_models::{subaccounts::SubAccount, users::User, wallets::Wallet},
     telegram_bot::{
-        actions::CallbackQueryProcessor, build_text_for_contact_support, commands::mint::build_text_for_wallet_not_created, escape_markdown_v2, TelegramBot
+        TelegramBot, actions::CallbackQueryProcessor, build_text_for_contact_support,
+        commands::mint::build_text_for_wallet_not_created, escape_markdown_v2,
     },
     utils::{
         database_connection::get_db_connection, decibel_transaction::place_order_to_subaccount,
@@ -45,11 +46,8 @@ impl CallbackQueryProcessor for PlaceOrder {
         let market = if let Some(market) = market_opt {
             market
         } else {
-            bot.send_message(
-                chat_id,
-                "Market missing, please try placing order again",
-            )
-            .await?;
+            bot.send_message(chat_id, "Market missing, please try placing order again")
+                .await?;
             return Ok(());
         };
 
@@ -72,17 +70,20 @@ impl CallbackQueryProcessor for PlaceOrder {
         };
         let maybe_wallet = Wallet::get_primary_wallet_by_user_id(db_user.id, &mut conn).await?;
         let db_wallet = if let Some(wallet) = maybe_wallet {
-            wallet 
+            wallet
         } else {
-            bot.send_message(chat_id, build_text_for_contact_support()).await?;
-            return Ok(())
+            bot.send_message(chat_id, build_text_for_contact_support())
+                .await?;
+            return Ok(());
         };
-        let maybe_subaccount = SubAccount::get_primary_subaccount_by_wallet_id(db_wallet.id, &mut conn).await?;
+        let maybe_subaccount =
+            SubAccount::get_primary_subaccount_by_wallet_id(db_wallet.id, &mut conn).await?;
         let db_subaccount = if let Some(subaccount) = maybe_subaccount {
-            subaccount 
+            subaccount
         } else {
-            bot.send_message(chat_id, "Sub account not found, please contact support").await?;
-            return Ok(())
+            bot.send_message(chat_id, "Sub account not found, please contact support")
+                .await?;
+            return Ok(());
         };
         let is_long = if self.order_type == "long" {
             true
@@ -98,11 +99,10 @@ impl CallbackQueryProcessor for PlaceOrder {
             is_long,
             self.leverage,
         )?;
-         let signed_txn = cfg.aptos_client.sign_txn_with_turnkey_and_fee_payer(
-            &db_wallet.address, 
-            &db_wallet.public_key, 
-            payload
-        ).await?;
+        let signed_txn = cfg
+            .aptos_client
+            .sign_txn_with_turnkey_and_fee_payer(&db_wallet.address, &db_wallet.public_key, payload)
+            .await?;
 
         // let vm_error = cfg.aptos_client.simulate_transaction(&signed_txn).await?;
         // if let Some(err) = vm_error {
@@ -114,9 +114,7 @@ impl CallbackQueryProcessor for PlaceOrder {
 
         let hash = cfg
             .aptos_client
-            .submit_transaction_and_wait(
-                signed_txn
-            )
+            .submit_transaction_and_wait(signed_txn)
             .await?;
         tracing::info!(
             "Place order to subaccount hash: {}, sender({})",

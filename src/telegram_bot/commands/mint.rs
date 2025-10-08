@@ -51,16 +51,11 @@ impl CommandProcessor for Mint {
             .await?;
 
         let amount = 10000000u64;
-        let payload = mint(
-            &cfg.config.contract_address,
-            &db_wallet.address,
-            amount,
-        )?;
-        let signed_txn = cfg.aptos_client.sign_txn_with_turnkey_and_fee_payer(
-            &db_wallet.address, 
-            &db_wallet.public_key, 
-            payload
-        ).await?;
+        let payload = mint(&cfg.config.contract_address, &db_wallet.address, amount)?;
+        let signed_txn = cfg
+            .aptos_client
+            .sign_txn_with_turnkey_and_fee_payer(&db_wallet.address, &db_wallet.public_key, payload)
+            .await?;
 
         // let vm_error = cfg.aptos_client.simulate_transaction(&signed_txn).await?;
         // if let Some(err) = vm_error {
@@ -72,9 +67,7 @@ impl CommandProcessor for Mint {
 
         let hash = cfg
             .aptos_client
-            .submit_transaction_and_wait(
-                signed_txn
-            )
+            .submit_transaction_and_wait(signed_txn)
             .await?;
         tracing::info!(
             "Minted usdc faucet: {}, sender({})",

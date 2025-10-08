@@ -210,17 +210,23 @@ impl AptosClient {
         Ok(response.into_inner())
     }
 
-    pub async fn simulate_transaction(&self, txn: &SignedTransaction) -> anyhow::Result<Option<String>> {
+    pub async fn simulate_transaction(
+        &self,
+        txn: &SignedTransaction,
+    ) -> anyhow::Result<Option<String>> {
         let simulation_response = self.client.simulate(txn).await?;
         let simulation_result = simulation_response.inner()[0].clone();
         let mut err: Option<String> = None;
         if !simulation_result.info.success {
-            err = Some(simulation_result.info.vm_status) 
+            err = Some(simulation_result.info.vm_status)
         }
         Ok(err)
     }
 
-    pub async fn submit_transaction_and_wait(&self, txn: SignedTransaction) -> anyhow::Result<String> {
+    pub async fn submit_transaction_and_wait(
+        &self,
+        txn: SignedTransaction,
+    ) -> anyhow::Result<String> {
         let pending_transaction = self.client.submit(&txn).await?;
 
         self.client

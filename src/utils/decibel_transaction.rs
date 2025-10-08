@@ -5,8 +5,8 @@ use aptos_sdk::{
     bcs,
     move_types::{identifier::Identifier, language_storage::ModuleId},
     types::{
-        account_address::AccountAddress, transaction::{EntryFunction, TransactionPayload}
-        
+        account_address::AccountAddress,
+        transaction::{EntryFunction, TransactionPayload},
     },
 };
 
@@ -57,7 +57,10 @@ pub fn place_order_to_subaccount(
     is_long: bool,
     leverage: u64,
 ) -> anyhow::Result<TransactionPayload> {
-    println!("subaccount={}, market_address={}, order_value={}, order_size={}, is_long={}, leverage={}", subaccount, market_address, order_value, order_size, is_long, leverage);
+    println!(
+        "subaccount={}, market_address={}, order_value={}, order_size={}, is_long={}, leverage={}",
+        subaccount, market_address, order_value, order_size, is_long, leverage
+    );
     let module = ModuleId::new(
         AccountAddress::from_str(contract_address)?,
         Identifier::new("dex_accounts")?,
@@ -93,21 +96,21 @@ pub fn deposit_to_subaccount(
     contract_addr: &str,
     subaccount_addr: &str,
     fa_addr: &str,
-    amount: u64 
+    amount: u64,
 ) -> anyhow::Result<TransactionPayload> {
     let module = ModuleId::new(
         AccountAddress::from_str(contract_addr)?,
-        Identifier::new("dex_accounts")?
+        Identifier::new("dex_accounts")?,
     );
     let payload = TransactionPayload::EntryFunction(EntryFunction::new(
-        module, 
-        Identifier::new("deposit_to_subaccount_at")?, 
-        vec![], 
+        module,
+        Identifier::new("deposit_to_subaccount_at")?,
+        vec![],
         vec![
             bcs::to_bytes(&AccountAddress::from_str(subaccount_addr)?)?,
             bcs::to_bytes(&AccountAddress::from_str(fa_addr)?)?,
-            bcs::to_bytes(&amount)?
-        ]
+            bcs::to_bytes(&amount)?,
+        ],
     ));
-    Ok(payload) 
+    Ok(payload)
 }

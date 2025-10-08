@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use bigdecimal::BigDecimal;
-use teloxide::{dispatching::dialogue::GetChatId, payloads::EditMessageTextSetters, prelude::Requester, types::ParseMode};
+use teloxide::{
+    dispatching::dialogue::GetChatId, payloads::EditMessageTextSetters, prelude::Requester,
+    types::ParseMode,
+};
 use uuid::Uuid;
 
 use crate::{
@@ -94,25 +97,22 @@ impl StateProcessor for WithdrawAmount {
 
         let payload = transfer_fa(&db_token.address, &self.address, amount_u64)?;
 
-        let signed_txn = cfg.aptos_client.sign_txn_with_turnkey_and_fee_payer(
-            &db_wallet.address, 
-            &db_wallet.public_key, 
-            payload
-        ).await?;
+        let signed_txn = cfg
+            .aptos_client
+            .sign_txn_with_turnkey_and_fee_payer(&db_wallet.address, &db_wallet.public_key, payload)
+            .await?;
 
         let vm_error = cfg.aptos_client.simulate_transaction(&signed_txn).await?;
         if let Some(err) = vm_error {
             bot.send_message(chat_id, err).await?;
-            return Ok(())
+            return Ok(());
         } else {
             println!("Simulation success");
         };
 
         let hash = cfg
             .aptos_client
-            .submit_transaction_and_wait(
-                signed_txn
-            )
+            .submit_transaction_and_wait(signed_txn)
             .await?;
         tracing::info!("Withdraw hash: {}, sender({})", hash, &db_wallet.address);
 
