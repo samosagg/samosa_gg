@@ -1,11 +1,16 @@
 use aptos_indexer_processor_sdk::utils::convert::standardize_address;
 use diesel::{
-    AsChangeset, ExpressionMethods, OptionalExtension, QueryDsl, Queryable, prelude::Insertable,
+    AsChangeset,
+    ExpressionMethods,
+    OptionalExtension,
+    QueryDsl,
+    Queryable,
+    prelude::Insertable,
 };
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
 
-use crate::{schema::users, utils::database_utils::DbPoolConnection};
+use crate::{ schema::users, utils::database_utils::DbPoolConnection };
 
 #[derive(AsChangeset, Debug, Queryable, Clone)]
 #[diesel(table_name = users)]
@@ -23,25 +28,34 @@ pub struct User {
 impl User {
     pub async fn get_by_telegram_id(
         telegram_id: i64,
-        conn: &mut DbPoolConnection<'_>,
+        conn: &mut DbPoolConnection<'_>
     ) -> diesel::QueryResult<Option<Self>> {
         users::table
             .filter(users::telegram_id.eq(Some(telegram_id)))
             .select(users::all_columns)
-            .first::<Self>(conn)
-            .await
+            .first::<Self>(conn).await
+            .optional()
+    }
+
+    pub async fn get_by_telegram_username(
+        username: String,
+        conn: &mut DbPoolConnection<'_>
+    ) -> diesel::QueryResult<Option<Self>> {
+        users::table
+            .filter(users::telegram_username.eq(Some(username)))
+            .select(users::all_columns)
+            .first::<Self>(conn).await
             .optional()
     }
 
     pub async fn get_by_secondary_wallet_address(
         secondary_wallet_address: String,
-        conn: &mut DbPoolConnection<'_>,
+        conn: &mut DbPoolConnection<'_>
     ) -> diesel::QueryResult<Option<Self>> {
         users::table
             .filter(users::secondary_wallet_address.eq(Some(secondary_wallet_address)))
             .select(users::all_columns)
-            .first::<Self>(conn)
-            .await
+            .first::<Self>(conn).await
             .optional()
     }
 }
@@ -68,7 +82,7 @@ impl NewTelegramUser {
     pub fn to_db_user_with_custom_uuid(
         id: Uuid,
         telegram_id: i64,
-        telegram_username: Option<String>,
+        telegram_username: Option<String>
     ) -> Self {
         Self {
             id,
