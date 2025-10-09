@@ -7,3 +7,4 @@ pub mod market_indexer;
 pub mod shutdown_utils;
 pub mod view_requests;
 pub mod wallet_transaction;
+pub mod perps_math;

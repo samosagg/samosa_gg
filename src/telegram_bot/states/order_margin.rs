@@ -4,11 +4,11 @@ use crate::{
     telegram_bot::{
         actions::UserAction, commands::mint::build_text_for_wallet_not_created, escape_markdown_v2, states::StateProcessor, TelegramBot
     },
-    utils::database_connection::get_db_connection,
+    utils::{database_connection::get_db_connection, perps_math::{liquidation_price, notional_price, position_size, position_value}},
 };
 use anyhow::Context;
 use bigdecimal::BigDecimal;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 use teloxide::{
     payloads::SendMessageSetters,
     prelude::*,
@@ -87,13 +87,28 @@ impl StateProcessor for OrderMargin {
             
             
         } else {
-            // let liq_price = calculate_liquidation_price(
-            //     &asset.mark_price,
-            //     &BigDecimal::from(self.leverage),
-            //     &mm,
-            //     is_long,
-            // );
-            let text = "Order quote will be displayed here";
+            let entry_price = asset_context.mark_price.clone();
+            let notional_price = notional_price(&amount, self.leverage);
+            let position_size = position_size(&notional_price, &entry_price);
+            let position_value = position_value(&position_size, &entry_price);
+            let liq_price = liquidation_price(self.is_long, &entry_price, self.leverage, &BigDecimal::from_str("0.001").unwrap());
+            let text = format!(
+                "Placing {} order\n\n\
+                Entry price ${}\n\
+                Margin ${}\n\
+                Order Size {}/{} {}\n\
+                Liquidation Price ${}\n\
+                Leverage {}x\n\n\
+                Click on the Confirm Order button below to confirm your order",
+                if self.is_long { "long" } else { "short" },
+                entry_price.with_scale(4),
+                amount.with_scale(4),
+                position_size.with_scale(4),
+                position_value.with_scale(4),
+                &market.market_name,
+                liq_price.with_scale(4),
+                self.leverage
+            );
             // let keyboard = build_order_confirm_keyboard(
             //     &market.market_name,
             //     &self.order_type,
@@ -102,7 +117,13 @@ impl StateProcessor for OrderMargin {
             // );
             bot.send_message(msg.chat.id, escape_markdown_v2(&text))
                 .parse_mode(ParseMode::MarkdownV2)
-                // .reply_markup(keyboard)
+                .reply_markup(InlineKeyboardMarkup::new(
+                    vec![
+                        vec![
+                            InlineKeyboardButton::callback("Confirm Order", "callback_data")
+                        ]
+                    ]
+                ))
                 .await?;
         };
 

@@ -53,7 +53,7 @@ pub fn place_order_to_subaccount(
     subaccount_addr: &str,
     market_addr: &str,
     order_value: u64,
-    order_size: u64,
+    size: u64,
     is_long: bool,
     leverage: u64,
 ) -> anyhow::Result<TransactionPayload> {
@@ -65,7 +65,7 @@ pub fn place_order_to_subaccount(
         bcs::to_bytes(&AccountAddress::from_str(subaccount_addr)?)?,
         bcs::to_bytes(&AccountAddress::from_str(market_addr)?)?,
         bcs::to_bytes(&1000u64)?,
-        bcs::to_bytes(&1000u64)?,
+        bcs::to_bytes(&size)?,
         bcs::to_bytes(&false)?,
         bcs::to_bytes(&2u8)?,
         bcs::to_bytes(&false)?,
