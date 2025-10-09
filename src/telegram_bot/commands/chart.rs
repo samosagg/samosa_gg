@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::{TimeZone, Utc};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use teloxide::{prelude::*, types::InputFile};
+use teloxide::{prelude::*, types::{InputFile, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode}};
 
 use crate::cache::{Cache, ICache};
 use crate::telegram_bot::{TelegramBot, commands::CommandProcessor};
@@ -36,6 +36,19 @@ pub struct CandlestickResponse {
 }
 
 pub struct Chart;
+
+// Helper function to escape MarkdownV2 characters
+fn escape_markdown_v2(text: &str) -> String {
+    let reserved = r"_*[]()~`>#+-=|{}.!"; 
+    let mut escaped = String::new();
+    for c in text.chars() {
+        if reserved.contains(c) {
+            escaped.push('\\');
+        }
+        escaped.push(c);
+    }
+    escaped
+}
 
 #[async_trait::async_trait]
 impl CommandProcessor for Chart {
@@ -225,9 +238,35 @@ impl CommandProcessor for Chart {
         .await
         .unwrap_or_else(|err| tracing::error!("Task join error: {:?}", err));
 
-        // Send the chart image
-        bot.send_photo(msg.chat.id, InputFile::file(&path)).await?;
+        // Create inline keyboard
+        let keyboard = InlineKeyboardMarkup::new(vec![
+            vec![
+                InlineKeyboardButton::callback("1D".to_string(), "interval_1d".to_string()),
+                InlineKeyboardButton::callback("1H".to_string(), "interval_1h".to_string()),
+                InlineKeyboardButton::callback("4H".to_string(), "interval_4h".to_string()),
+                InlineKeyboardButton::callback("8H".to_string(), "interval_8h".to_string()),
+            ],
+            vec![
+                InlineKeyboardButton::callback("📈 Long".to_string(), "position_long".to_string()),
+                InlineKeyboardButton::callback("📉 Short".to_string(), "position_short".to_string()),
+            ],
+        ]);
 
+        // Escape pair and interval for MarkdownV2
+        let caption = format!(
+            "📊 *{} Chart \\({}\\)*\n\nChoose interval or position below:",
+            escape_markdown_v2(&pair),
+            escape_markdown_v2(&interval)
+        );
+
+        // Send chart image with buttons
+        bot.send_photo(msg.chat.id, InputFile::file(&path))
+            .caption(caption)
+            .reply_markup(keyboard)
+            .parse_mode(ParseMode::MarkdownV2)
+            .await?;
+
+        // Cleanup temp file
         if let Err(e) = tokio::fs::remove_file(&path).await {
             tracing::warn!("Failed to delete chart file {}: {}", path, e);
         }
