@@ -1,9 +1,7 @@
 pub mod ask_slippage;
 pub mod deposit_to_sub_amount;
-pub mod long_pair;
 pub mod order_margin;
 pub mod order_pair;
-pub mod short_pair;
 pub mod withdraw_address;
 pub mod withdraw_amount;
 
@@ -14,8 +12,6 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub enum PendingState {
-    WaitingForLongPair,
-    WaitingForShortPair,
     WaitingForOrderMargin {
         is_long: bool,
         market_name: String,

@@ -2,7 +2,7 @@
 use std::sync::Arc;
 use teloxide::{
     prelude::*,
-    types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode},
+    types::ParseMode,
 };
 use uuid::Uuid;
 

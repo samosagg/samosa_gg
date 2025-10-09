@@ -5,7 +5,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use teloxide::{prelude::*, types::{InputFile, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode}};
 
-use crate::cache::{Cache, ICache};
+use crate::{cache::{Cache, ICache}, telegram_bot::actions::UserAction};
 use crate::telegram_bot::{TelegramBot, commands::CommandProcessor};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -241,14 +241,14 @@ impl CommandProcessor for Chart {
         // Create inline keyboard
         let keyboard = InlineKeyboardMarkup::new(vec![
             vec![
-                InlineKeyboardButton::callback("1D".to_string(), "interval_1d".to_string()),
-                InlineKeyboardButton::callback("1H".to_string(), "interval_1h".to_string()),
-                InlineKeyboardButton::callback("4H".to_string(), "interval_4h".to_string()),
-                InlineKeyboardButton::callback("8H".to_string(), "interval_8h".to_string()),
+                InlineKeyboardButton::callback("1m", UserAction::Chart { market_name: market.market_name.clone(), interval: "1m".to_string() }.to_string()),
+                InlineKeyboardButton::callback("5m", UserAction::Chart { market_name: market.market_name.clone(), interval: "5m".to_string() }.to_string()),
+                InlineKeyboardButton::callback("1h", UserAction::Chart { market_name: market.market_name.clone(), interval: "1h".to_string() }.to_string()),
+                InlineKeyboardButton::callback("1d", UserAction::Chart { market_name: market.market_name.clone(), interval: "1d".to_string() }.to_string()),
             ],
             vec![
-                InlineKeyboardButton::callback("📈 Long".to_string(), "position_long".to_string()),
-                InlineKeyboardButton::callback("📉 Short".to_string(), "position_short".to_string()),
+                InlineKeyboardButton::callback("📈 Long", UserAction::OpenPosition { is_long: true, market_name: market.market_name.clone() }.to_string()), 
+                InlineKeyboardButton::callback("📉 Short", UserAction::OpenPosition { is_long: false, market_name: market.market_name.clone() }.to_string()),
             ],
         ]);
 

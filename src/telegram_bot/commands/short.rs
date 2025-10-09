@@ -17,14 +17,14 @@ impl CommandProcessor for Short {
         msg: Message,
     ) -> anyhow::Result<()> {
         // let from = msg.from.context("Message missing sender")?;
-        {
-            let mut state = cfg.state.lock().await;
-            state.insert(msg.chat.id, PendingState::WaitingForShortPair);
-        }
+        // {
+        //     let mut state = cfg.state.lock().await;
+        //     state.insert(msg.chat.id, PendingState::WaitingForShortPair);
+        // }
 
-        bot.send_message(msg.chat.id, build_text_for_asking_pair())
-            .parse_mode(ParseMode::MarkdownV2)
-            .await?;
+        // bot.send_message(msg.chat.id, build_text_for_asking_pair())
+        //     .parse_mode(ParseMode::MarkdownV2)
+        //     .await?;
 
         Ok(())
     }

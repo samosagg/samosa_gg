@@ -1,9 +1,8 @@
 use crate::{
     cache::{Cache, ICache},
-    db_models::users::User,
+    db_models::{tokens::Token, users::User},
     telegram_bot::{
-        TelegramBot, actions::UserAction, commands::mint::build_text_for_wallet_not_created,
-        escape_markdown_v2, states::StateProcessor,
+        actions::UserAction, commands::mint::build_text_for_wallet_not_created, escape_markdown_v2, states::StateProcessor, TelegramBot
     },
     utils::database_connection::get_db_connection,
 };
@@ -78,7 +77,15 @@ impl StateProcessor for OrderMargin {
             return Ok(());
         };
         if db_user.degen_mode {
-            // let payload =
+            let maybe_token = Token::get_token_by_symbol(db_user.token, &mut conn).await?;
+            let db_token = if let Some(token) = maybe_token {
+                token 
+            } else {
+                bot.send_message(chat_id, "Token not found by symbol").await?;
+                return Ok(())
+            };
+            
+            
         } else {
             // let liq_price = calculate_liquidation_price(
             //     &asset.mark_price,
@@ -136,16 +143,16 @@ fn build_order_confirm_keyboard(
     order_type: &str,
     leverage: u64,
     amount: BigDecimal,
-) -> InlineKeyboardMarkup {
-    let callback_data: String = UserAction::ConfirmOrder {
-        market: market.into(),
-        order_type: order_type.into(),
-        leverage,
-        amount,
-    }
-    .to_string();
-    InlineKeyboardMarkup::new(vec![vec![InlineKeyboardButton::callback(
-        "Confirm Order",
-        callback_data,
-    )]])
+) {
+    // let callback_data: String = UserAction::ConfirmOrder {
+    //     market: market.into(),
+    //     order_type: order_type.into(),
+    //     leverage,
+    //     amount,
+    // }
+    // .to_string();
+    // InlineKeyboardMarkup::new(vec![vec![InlineKeyboardButton::callback(
+    //     "Confirm Order",
+    //     callback_data,
+    // )]])
 }

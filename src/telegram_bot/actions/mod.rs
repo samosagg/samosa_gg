@@ -15,10 +15,11 @@ pub mod stats;
 pub mod transfer;
 pub mod update_slippage;
 pub mod withdraw;
+pub mod chart;
+pub mod open_position;
 
 use std::{str::FromStr, sync::Arc};
 
-use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -37,20 +38,30 @@ pub trait CallbackQueryProcessor {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UserAction {
+    // Chart action on button click
+    Chart { 
+        market_name: String,
+        interval: String
+    },
+    // On click of long/short button
+    OpenPosition {
+        is_long: bool,
+        market_name: String
+    },
     CreateTradingAccount,
     AddToGroup,
     JoinExistingClan,
-    Order {
-        market: String,
-        order_type: String,
-        leverage: u64,
-    },
-    ConfirmOrder {
-        market: String,
-        order_type: String,
-        leverage: u64,
-        amount: BigDecimal,
-    },
+    // Order {
+    //     market: String,
+    //     order_type: String,
+    //     leverage: u64,
+    // },
+    // ConfirmOrder {
+    //     market: String,
+    //     order_type: String,
+    //     leverage: u64,
+    //     amount: BigDecimal,
+    // },
     Stats,
     Accounts {
         user_id: Uuid,
@@ -88,27 +99,11 @@ pub enum UserAction {
 impl ToString for UserAction {
     fn to_string(&self) -> String {
         match self {
+            UserAction::Chart { market_name, interval } => format!("chart|{}|{}", market_name, interval),
+            UserAction::OpenPosition { is_long, market_name } => format!("op|{}|{}", is_long, market_name),
             UserAction::CreateTradingAccount => "create_trading_account".to_string(),
             UserAction::AddToGroup => "add_to_group".to_string(),
             UserAction::JoinExistingClan => "join_existing_clan".to_string(),
-            UserAction::Order {
-                market,
-                order_type,
-                leverage,
-            } => {
-                format!("order|{}|{}|{}", market, order_type, leverage)
-            }
-            UserAction::ConfirmOrder {
-                market,
-                order_type,
-                leverage,
-                amount,
-            } => {
-                format!(
-                    "confirm_order|{}|{}|{}|{}",
-                    market, order_type, leverage, amount
-                )
-            }
             UserAction::ChangeDegenMode {
                 change_to,
                 user_id,
@@ -152,28 +147,6 @@ impl FromStr for UserAction {
             "export_pk" => Ok(UserAction::ExportPk),
             "slippage" => Ok(UserAction::Slippage),
             "stats" => Ok(UserAction::Stats),
-            "order" if parts.len() == 4 => {
-                let market = parts[1].to_string();
-                let order_type = parts[2].to_string();
-                let leverage = parts[3].parse::<u64>().map_err(|_| ())?;
-                Ok(UserAction::Order {
-                    market,
-                    order_type,
-                    leverage,
-                })
-            }
-            "confirm_order" if parts.len() == 5 => {
-                let market = parts[1].to_string();
-                let order_type = parts[2].to_string();
-                let leverage = parts[3].parse::<u64>().map_err(|_| ())?;
-                let amount = parts[4].parse::<BigDecimal>().map_err(|_| ())?;
-                Ok(UserAction::ConfirmOrder {
-                    market,
-                    order_type,
-                    leverage,
-                    amount,
-                })
-            }
             "degen_mode" if parts.len() == 4 => {
                 let change_to = parts[1].parse::<bool>().map_err(|_| ())?;
                 let user_id = Uuid::parse_str(parts[2]).map_err(|_| ())?;
@@ -222,7 +195,17 @@ impl FromStr for UserAction {
                     market_name,
                     leverage,
                 })
-            }
+            },
+            "chart" if parts.len() == 3 => {
+                let market_name = parts[1].to_string();
+                let interval = parts[2].to_string();
+                Ok(UserAction::Chart { market_name, interval })
+            },
+            "op" if parts.len() == 3 => {
+                let is_long = parts[1].parse::<bool>().map_err(|_| ())?;
+                let market_name = parts[2].to_string();
+                Ok(UserAction::OpenPosition { is_long, market_name })
+            },
             _ => Err(()),
         }
     }

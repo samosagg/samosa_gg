@@ -13,24 +13,13 @@ use crate::{
     config::Config,
     telegram_bot::{
         actions::{
-            CallbackQueryProcessor, UserAction, accounts::Accounts, add_to_group::AddToGroup,
-            ask_order_amount::AskOrderAmount, balances::Balances, change_degen_mode::DegenMode,
-            close::Close, create_trading_account::CreateTradingAccount,
-            deposit_to_subaccount::DepositToSubAccount, export_pk::ExportPk,
-            join_existing_clan::JoinExistingClan, order_leverage::OrderLeverage,
-            place_order::PlaceOrder, slippage::Slippage, stats::Stats, transfer::Transfer,
-            update_slippage::UpdateSlippage, withdraw::Withdraw,
+            accounts::Accounts, add_to_group::AddToGroup, ask_order_amount::AskOrderAmount, balances::Balances, change_degen_mode::DegenMode, chart::Chart as ActionChart, close::Close, create_trading_account::CreateTradingAccount, deposit_to_subaccount::DepositToSubAccount, export_pk::ExportPk, join_existing_clan::JoinExistingClan, open_position::OpenPosition, slippage::Slippage, stats::Stats, transfer::Transfer, update_slippage::UpdateSlippage, withdraw::Withdraw, CallbackQueryProcessor, UserAction
         },
         commands::{
-            CommandProcessor, PrivateCommand, chart::Chart, long::Long, mint::Mint,
-            positions::Positions, settings::Settings, short::Short, start::Start,
-            terminal::Terminal, wallet::Wallet,
+            chart::Chart, long::Long, mint::Mint, positions::Positions, settings::Settings, short::Short, start::Start, terminal::Terminal, wallet::Wallet, CommandProcessor, PrivateCommand
         },
         states::{
-            PendingState, StateProcessor, ask_slippage::AskSlippage,
-            deposit_to_sub_amount::DepositToSubaccountAmount, long_pair::LongPair,
-            order_margin::OrderMargin, order_pair::OrderPair, short_pair::ShortPair,
-            withdraw_address::WithdrawAddress, withdraw_amount::WithdrawAmount,
+            ask_slippage::AskSlippage, deposit_to_sub_amount::DepositToSubaccountAmount, order_margin::OrderMargin, order_pair::OrderPair, withdraw_address::WithdrawAddress, withdraw_amount::WithdrawAmount, PendingState, StateProcessor
         },
     },
     utils::{aptos_client::AptosClient, database_utils::ArcDbPool},
@@ -142,43 +131,6 @@ async fn handle_callback_query(
                 Ok(UserAction::CreateTradingAccount) => Some(Box::new(CreateTradingAccount)),
                 Ok(UserAction::AddToGroup) => Some(Box::new(AddToGroup)),
                 Ok(UserAction::JoinExistingClan) => Some(Box::new(JoinExistingClan)),
-                Ok(UserAction::Order {
-                    market,
-                    order_type,
-                    leverage,
-                }) => {
-                    tracing::info!(
-                        "Order callback received: market={}, type={}, leverage={}",
-                        market,
-                        order_type,
-                        leverage
-                    );
-                    Some(Box::new(OrderLeverage {
-                        market,
-                        order_type,
-                        leverage,
-                    }))
-                }
-                Ok(UserAction::ConfirmOrder {
-                    market,
-                    order_type,
-                    leverage,
-                    amount,
-                }) => {
-                    tracing::info!(
-                        "Confirm Order callback received: market={}, type={}, leverage={}, amount={}",
-                        market,
-                        order_type,
-                        leverage,
-                        amount
-                    );
-                    Some(Box::new(PlaceOrder {
-                        market,
-                        order_type,
-                        leverage,
-                        amount,
-                    }))
-                }
                 Ok(UserAction::ChangeDegenMode {
                     change_to,
                     user_id,
@@ -232,6 +184,8 @@ async fn handle_callback_query(
                     is_long,
                     leverage,
                 })),
+                Ok(UserAction::Chart { market_name, interval }) => Some(Box::new(ActionChart { market_name, interval })),
+                Ok(UserAction::OpenPosition { is_long, market_name }) => Some(Box::new(OpenPosition{ is_long, market_name })),
                 Err(_) => {
                     tracing::warn!("Unknown callback: {}", data);
                     None
@@ -268,8 +222,6 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
 
     if let Some(state) = maybe_state {
         let state_processor: Box<dyn StateProcessor + Send + Sync> = match state {
-            PendingState::WaitingForLongPair => Box::new(LongPair),
-            PendingState::WaitingForShortPair => Box::new(ShortPair),
             PendingState::WaitingForOrderMargin {
                 is_long,
                 market_name,
