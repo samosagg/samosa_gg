@@ -1,16 +1,17 @@
 pub mod middlewares;
+pub mod controllers;
+pub mod utils;
 
 use std::{net::SocketAddr, sync::Arc};
 
-use axum::Router;
+use axum::{middleware, routing::get, Router};
 use tokio::net::TcpListener;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
-    config::Config,
-    utils::{database_utils::ArcDbPool, shutdown_utils},
+    config::Config, http_server::{controllers::{auth, health}, middlewares::authentication}, utils::{database_utils::ArcDbPool, shutdown_utils}
 };
 
 #[derive(OpenApi)]
@@ -51,7 +52,29 @@ impl HttpServer {
     }
 
     fn router(self: &Arc<Self>) -> Router {
+
+        let pool = Arc::clone(&self.pool);
+        let jwt_secret = self.config.jwt_config.secret.to_string();
         let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
+            .route("/health", get(health::check))
+            .nest(
+                "/api/v1", 
+                OpenApiRouter::new()
+                    .nest(
+                        "/auth", 
+                        OpenApiRouter::new()
+                            .route("/tg-verify", get(auth::tg_verify))
+                            .layer(middleware::from_fn(move |req, next| {
+                                    authentication::tg_authentication(
+                                        req, 
+                                        next,   
+                                        Arc::clone(&pool), 
+                                        jwt_secret.clone()
+                                    )
+                                })
+                            ),
+                    )
+            )
             .with_state(Arc::clone(self))
             .split_for_parts();
         router.merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", api.clone()))

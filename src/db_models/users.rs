@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::{schema::users, utils::database_utils::DbPoolConnection};
 
-#[derive(AsChangeset, Debug, Queryable)]
+#[derive(AsChangeset, Debug, Queryable, Clone)]
 #[diesel(table_name = users)]
 #[diesel(primary_key(id))]
 pub struct User {
