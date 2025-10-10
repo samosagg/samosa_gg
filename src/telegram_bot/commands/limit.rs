@@ -5,10 +5,10 @@ use crate::telegram_bot::states::PendingState;
 use crate::telegram_bot::{TelegramBot, commands::CommandProcessor};
 use teloxide::prelude::*;
 
-pub struct Short;
+pub struct Limit;
 
 #[async_trait::async_trait]
-impl CommandProcessor for Short {
+impl CommandProcessor for Limit {
     async fn process(
         &self,
         cfg: Arc<TelegramBot<Cache>>,
@@ -19,7 +19,7 @@ impl CommandProcessor for Short {
 
         {
             let mut state = cfg.state.lock().await;
-            state.insert(msg.chat.id, PendingState::OrderPair { is_long: false });
+            state.insert(msg.chat.id, PendingState::LimitPair);
         }
 
         bot.send_message(chat_id, "Write ticker e.g. APT/USD").await?;

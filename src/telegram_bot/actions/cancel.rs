@@ -7,10 +7,10 @@ use crate::{
     telegram_bot::{TelegramBot, actions::CallbackQueryProcessor},
 };
 
-pub struct Close;
+pub struct Cancel;
 
 #[async_trait::async_trait]
-impl CallbackQueryProcessor for Close {
+impl CallbackQueryProcessor for Cancel {
     async fn process(
         &self,
         _cfg: Arc<TelegramBot<Cache>>,

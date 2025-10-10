@@ -1,6 +1,5 @@
 pub mod cache;
 pub mod config;
-pub mod db_models;
 pub mod http_server;
 #[path = "db_migrations/schema.rs"]
 pub mod schema;

@@ -1,25 +1,25 @@
 use crate::{
-    cache::{Cache, ICache}, models::db::users::User, telegram_bot::{
-        actions::UserAction, escape_markdown_v2, states::StateProcessor, TelegramBot
-    }, utils::{database_connection::get_db_connection, perps_math::{liquidation_price, notional_price, position_size, position_value}, view_requests::view_fa_balance_request}
+    cache::Cache, models::db::users::User, telegram_bot::{
+        actions::UserAction, states::StateProcessor, TelegramBot
+    }, utils::{database_connection::get_db_connection, view_requests::view_fa_balance_request}
 };
 use anyhow::Context;
 use bigdecimal::BigDecimal;
-use std::{str::FromStr, sync::Arc};
+use std::sync::Arc;
 use teloxide::{
     payloads::SendMessageSetters,
     prelude::*,
     types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode},
 };
 
-pub struct OrderMargin {
+pub struct LimitOrderMargin {
     pub market_name: String,
-    pub is_long: bool,
+    pub price: BigDecimal,
     pub leverage: u8,
 }
 
 #[async_trait::async_trait]
-impl StateProcessor for OrderMargin {
+impl StateProcessor for LimitOrderMargin {
     async fn process(
         &self,
         cfg: Arc<TelegramBot<Cache>>,
@@ -44,8 +44,6 @@ impl StateProcessor for OrderMargin {
             state.remove(&chat_id);
         }
 
-        let market = cfg.cache.get_market(&self.market_name).await.ok_or_else(|| anyhow::anyhow!("Unable to get market. Please try again"))?;
-        let asset_context = cfg.cache.get_asset_context(&market.market_name).await.ok_or_else(|| anyhow::anyhow!("Unable to get market data. Please try again"))?;
         let mut conn = get_db_connection(&cfg.pool).await?;
         let db_user = User::get_by_telegram_id(tg_id, &mut conn).await?.ok_or_else(|| anyhow::anyhow!("Wallet not created yet. Type /start to create wallet"))?;
         let request = view_fa_balance_request("0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02", &db_user.address)?;
@@ -57,12 +55,14 @@ impl StateProcessor for OrderMargin {
             bot.send_message(chat_id, format!("Insufficient balance, Available: {}USDC", usdc)).await?;
             return Ok(())
         };
-        let order_type = if self.is_long { "long" } else { "short" };
-        let text = format!("You are opening a <b>{}</b> position for <b>{}</b> for <b>{} USDC</b> at price <b>${}</b> with Leverage <b>{}x</b>", order_type.to_uppercase(), market.market_name, amount, asset_context.mark_price,self.leverage);
+        let text = format!("You are placing <b>{}</b> limit order at price <b>{}</b> with margin <b>{} USDC</b>and Leverage <b>{}x</b>", self.market_name.clone(), self.price, amount, self.leverage);
         let kb = InlineKeyboardMarkup::new(
             vec![
                 vec![
-                    InlineKeyboardButton::callback("✅ Yes", UserAction::PlaceOrder { market_name: self.market_name.clone(), is_long: self.is_long, leverage: self.leverage, amount }.to_string()),
+                    InlineKeyboardButton::callback("🟢 Buy/Long", UserAction::PlaceLimitOrder { market_name: self.market_name.clone(), is_long: true, price: self.price.clone(), leverage: self.leverage, amount: amount.clone() }.to_string()),
+                    InlineKeyboardButton::callback("🔴 Sell/Short", UserAction::PlaceLimitOrder { market_name: self.market_name.clone(), is_long: false, price: self.price.clone(), leverage: self.leverage, amount: amount.clone() }.to_string())
+                ],
+                vec![
                     InlineKeyboardButton::callback("❌ Cancel", UserAction::Cancel.to_string())
                 ]
             ]

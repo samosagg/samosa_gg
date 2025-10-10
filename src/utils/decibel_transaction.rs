@@ -50,33 +50,42 @@ pub fn mint(
 
 pub fn place_order_to_subaccount(
     contract_addr: &str,
-    subaccount_addr: &str,
-    market_addr: &str,
-    order_value: u64,
+    subaccount: &str,
+    market: &str,
+    price: u64,
     size: u64,
-    is_long: bool,
-    leverage: u64,
+    is_buy: bool,
+    time_in_force: u8,
+    is_reduce_only: bool,
+    client_order_id: Option<String>,
+    stop_price: Option<u64>,
+    tp_trigger_price: Option<u64>,
+    tp_limit_price: Option<u64>,
+    sl_trigger_price: Option<u64>,
+    sl_limit_price: Option<u64>,
+    builder_address: Option<AccountAddress>,
+    builder_fees: Option<u64>
 ) -> anyhow::Result<TransactionPayload> {
     let module = ModuleId::new(
         AccountAddress::from_str(contract_addr)?,
         Identifier::new("dex_accounts")?,
     );
     let args = vec![
-        bcs::to_bytes(&AccountAddress::from_str(subaccount_addr)?)?,
-        bcs::to_bytes(&AccountAddress::from_str(market_addr)?)?,
-        bcs::to_bytes(&1000u64)?,
+        bcs::to_bytes(&AccountAddress::from_str(subaccount)?)?,
+        bcs::to_bytes(&AccountAddress::from_str(market)?)?,
+        bcs::to_bytes(&price)?,
         bcs::to_bytes(&size)?,
-        bcs::to_bytes(&false)?,
-        bcs::to_bytes(&2u8)?,
-        bcs::to_bytes(&false)?,
-        bcs::to_bytes(&None::<String>)?,
-        bcs::to_bytes(&None::<u64>)?,
-        bcs::to_bytes(&None::<u64>)?,
-        bcs::to_bytes(&None::<u64>)?,
-        bcs::to_bytes(&None::<u64>)?,
-        bcs::to_bytes(&None::<u64>)?,
-        bcs::to_bytes(&None::<AccountAddress>)?,
-        bcs::to_bytes(&None::<u64>)?,
+        bcs::to_bytes(&is_buy)?,
+        bcs::to_bytes(&time_in_force)?,
+        bcs::to_bytes(&is_reduce_only)?,
+        bcs::to_bytes(&client_order_id)?,
+        bcs::to_bytes(&stop_price)?,
+        bcs::to_bytes(&tp_trigger_price)?,
+        bcs::to_bytes(&tp_limit_price)?,
+        bcs::to_bytes(&sl_trigger_price)?,
+        bcs::to_bytes(&sl_limit_price)?,
+        bcs::to_bytes(&builder_address)?,
+        bcs::to_bytes(&builder_fees)?,
     ];
     let payload = TransactionPayload::EntryFunction(EntryFunction::new(
         module,
@@ -87,9 +96,9 @@ pub fn place_order_to_subaccount(
     Ok(payload)
 }
 
-pub fn deposit_to_subaccount(
+pub fn deposit_to_subaccount_at(
     contract_addr: &str,
-    subaccount_addr: &str,
+    subaccount: &str,
     fa_addr: &str,
     amount: u64,
 ) -> anyhow::Result<TransactionPayload> {
@@ -102,7 +111,7 @@ pub fn deposit_to_subaccount(
         Identifier::new("deposit_to_subaccount_at")?,
         vec![],
         vec![
-            bcs::to_bytes(&AccountAddress::from_str(subaccount_addr)?)?,
+            bcs::to_bytes(&AccountAddress::from_str(subaccount)?)?,
             bcs::to_bytes(&AccountAddress::from_str(fa_addr)?)?,
             bcs::to_bytes(&amount)?,
         ],

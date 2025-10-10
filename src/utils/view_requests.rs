@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use aptos_sdk::rest_client::aptos_api_types::{
     EntryFunctionId, MoveModuleId, MoveStructTag, MoveType, ViewRequest,
 };
@@ -24,6 +26,25 @@ pub fn view_fa_balance_request(
             generic_type_params: vec![],
         })],
         arguments: vec![json!(wallet_address), json!(fa_metadata)],
+    };
+    Ok(request)
+}
+
+pub fn view_primary_subaccount(
+    contract_address: &str,
+    address: &str 
+) -> anyhow::Result<ViewRequest> {
+      let entry_function_id = EntryFunctionId {
+        module: MoveModuleId {
+            address: AccountAddress::from_str(contract_address)?.to_string().parse()?,
+            name: "dex_accounts".parse()?,
+        },
+        name: "primary_subaccount".parse()?,
+    };
+    let request = ViewRequest {
+        function: entry_function_id,
+        type_arguments: vec![],
+        arguments: vec![json!(address)],
     };
     Ok(request)
 }

@@ -60,20 +60,20 @@ impl HttpServer {
             .nest(
                 "/api/v1", 
                 OpenApiRouter::new()
-                    .nest(
-                        "/auth", 
-                        OpenApiRouter::new()
-                            .route("/tg-verify", get(auth::tg_verify))
-                            .layer(middleware::from_fn(move |req, next| {
-                                    authentication::tg_authentication(
-                                        req, 
-                                        next,   
-                                        Arc::clone(&pool), 
-                                        jwt_secret.clone()
-                                    )
-                                })
-                            ),
-                    )
+                    // .nest(
+                    //     "/auth", 
+                    //     OpenApiRouter::new()
+                    //         .route("/tg-verify", get(auth::tg_verify))
+                    //         .layer(middleware::from_fn(move |req, next| {
+                    //                 authentication::tg_authentication(
+                    //                     req, 
+                    //                     next,   
+                    //                     Arc::clone(&pool), 
+                    //                     jwt_secret.clone()
+                    //                 )
+                    //             })
+                    //         ),
+                    // )
             )
             .with_state(Arc::clone(self))
             .split_for_parts();

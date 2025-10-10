@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use bigdecimal::BigDecimal;
 use teloxide::{
     Bot,
     prelude::Requester,
@@ -13,14 +14,14 @@ use crate::{
     },
 };
 
-pub struct OrderLeverage {
+pub struct LimitOrderLeverage {
     pub market_name: String,
-    pub is_long: bool,
+    pub price: BigDecimal,
     pub leverage: u8,
 }
 
 #[async_trait::async_trait]
-impl CallbackQueryProcessor for OrderLeverage {
+impl CallbackQueryProcessor for LimitOrderLeverage {
     async fn process(
         &self,
         cfg: Arc<TelegramBot<Cache>>,
@@ -35,12 +36,8 @@ impl CallbackQueryProcessor for OrderLeverage {
         {
             let mut state = cfg.state.lock().await;
             state.insert(
-                msg.chat().id,
-                PendingState::OrderMargin {
-                    market_name: self.market_name.clone(),
-                    is_long: self.is_long,
-                    leverage: self.leverage,
-                },
+                chat_id,
+                PendingState::LimitOrderMargin { market_name: self.market_name.clone(), price: self.price.clone(), leverage: self.leverage } 
             );
         }
         

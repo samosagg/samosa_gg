@@ -7,6 +7,9 @@ pub mod short;
 pub mod start;
 pub mod terminal;
 pub mod wallet;
+pub mod dashboard;
+pub mod limit;
+
 use std::sync::Arc;
 
 use teloxide::utils::command::BotCommands;
@@ -29,22 +32,24 @@ pub trait CommandProcessor {
     description = "The following commands are supported:"
 )]
 pub enum PrivateCommand {
-    #[command(aliases = ["help", "h"], description = "Setup your pace.trade account")]
+    #[command(description = "Setup your account")]
     Start,
     #[command(description = "Mint usdc faucet")]
     Mint,
-    #[command(description = "See wallet Info")]
-    Wallet,
+    #[command(description = "User dashboard")]
+    Dashboard,
     #[command(description = "Place a long order")]
     Long,
     #[command(description = "Place a short order")]
     Short,
-    #[command(description = "Open your settings")]
-    Settings,
-    #[command(description = "Open your account on Terminal")]
-    Terminal,
-    #[command(description = "See chart")]
-    Chart,
-    #[command(description = "See postions")]
-    Positions,
+    #[command(description = "Place a limit order")]
+    Limit,
+    // #[command(description = "Open your settings")]
+    // Settings,
+    // #[command(description = "Open your account on Terminal")]
+    // Terminal,
+    // #[command(description = "See chart")]
+    // Chart,
+    // #[command(description = "See postions")]
+    // Positions,
 }
