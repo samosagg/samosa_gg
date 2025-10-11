@@ -1,6 +1,6 @@
 // use axum::{extract::Request, http::header, middleware::Next, response::Response};
 // use jsonwebtoken::{decode, DecodingKey, Validation};
-// use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 // use crate::{db::users::User, http_server::utils::err_handler::{response_401_unhandled_err, response_401_with_const, response_401_with_message}, utils::{database_connection::get_db_connection, database_utils::ArcDbPool}};
 // #[derive(Serialize, Deserialize, Clone)]
@@ -10,6 +10,12 @@
 //     pub iat: usize,
 // }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Claims {
+    pub id: String,
+    pub exp: usize,
+    pub iat: usize
+}
 // pub async fn tg_authentication(
 //     mut req: Request,
 //     next: Next,

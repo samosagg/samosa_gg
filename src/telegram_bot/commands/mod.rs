@@ -44,8 +44,8 @@ pub enum PrivateCommand {
     Short,
     #[command(description = "Place a limit order")]
     Limit,
-    // #[command(description = "Open your settings")]
-    // Settings,
+    #[command(description = "Open your settings")]
+    Settings,
     // #[command(description = "Open your account on Terminal")]
     // Terminal,
     // #[command(description = "See chart")]

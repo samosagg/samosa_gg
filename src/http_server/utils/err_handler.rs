@@ -22,6 +22,12 @@ pub fn response_401_with_message(msg: &str) -> Response {
 
     (StatusCode::UNAUTHORIZED, Json(error)).into_response()
 }
+
+pub fn response_429_with_unhandled_err(e: anyhow::Error) -> Response {
+    let error = HttpResponseErr::new("ERR_429", &e.to_string());
+
+    (StatusCode::UNPROCESSABLE_ENTITY, Json(error)).into_response()
+}
 #[derive(Serialize, ToSchema)]
 pub struct HttpResponseErr {
     pub code: String,

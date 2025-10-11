@@ -19,6 +19,7 @@ pub mod chart;
 pub mod open_position;
 pub mod limit_order_leverage;
 pub mod place_limit_order;
+pub mod change_notification;
 
 use std::{str::FromStr, sync::Arc};
 
@@ -41,57 +42,6 @@ pub trait CallbackQueryProcessor {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum UserAction {
-    // Chart action on button click
-    // Chart { 
-    //     market_name: String,
-    //     interval: String
-    // },
-    // // On click of long/short button
-    // OpenPosition {
-    //     is_long: bool,
-    //     market_name: String
-    // },
-    // CreateTradingAccount,
-    // AddToGroup,
-    // JoinExistingClan,
-    // Order {
-    //     market: String,
-    //     order_type: String,
-    //     leverage: u64,
-    // },
-    // ConfirmOrder {
-    //     market: String,
-    //     order_type: String,
-    //     leverage: u64,
-    //     amount: BigDecimal,
-    // },
-    // Stats,
-    // Accounts {
-    //     user_id: Uuid,
-    //     token: String,
-    // },
-    // Withdraw {
-    //     user_id: Uuid,
-    //     token: String,
-    // },
-    // Balances {
-    //     user_id: Uuid,
-    // },
-    // Transfer {
-    //     user_id: Uuid,
-    // },
-    // ExportPk,
-    // Slippage,
-    // ChangeDegenMode {
-    //     change_to: bool,
-    //     user_id: Uuid,
-    //     token: String,
-    // },
-    // Close,
-    // UpdateSlippage,
-    // DepositToSubAccount {
-    //     subaccount_id: Option<Uuid>,
-    // },
     OrderLeverage {
         market_name: String,
         is_long: bool,
@@ -115,7 +65,10 @@ pub enum UserAction {
         leverage: u8,
         amount: BigDecimal,
         is_long: bool
-    }
+    },
+    ExportPk,
+    ChangeNotificationPreferences,
+    Slippage,
 }
 
 impl ToString for UserAction {
@@ -152,7 +105,10 @@ impl ToString for UserAction {
             UserAction::PlaceOrder { market_name, is_long, leverage, amount } => format!("place|{}|{}|{}|{}", market_name, is_long, leverage, amount),
             UserAction::Cancel => "cancel".to_string(),
             UserAction::LimitOrderLeverage { market_name, price, leverage } => format!("limit_leverage|{}|{}|{}", market_name, price, leverage),
-            UserAction::PlaceLimitOrder { market_name, price, leverage, amount, is_long } => format!("limit|{}|{}|{}|{}|{}", market_name, price, leverage, amount, is_long)
+            UserAction::PlaceLimitOrder { market_name, price, leverage, amount, is_long } => format!("limit|{}|{}|{}|{}|{}", market_name, price, leverage, amount, is_long),
+            UserAction::ExportPk => "export_pk".to_string(),
+            UserAction::ChangeNotificationPreferences => "change_notification".to_string(),
+            UserAction::Slippage => "slippage".to_string(),
         }
     }
 }
@@ -235,17 +191,10 @@ impl FromStr for UserAction {
                 let amount = BigDecimal::from_str(&parts[4].to_string()).map_err(|_| ())?;
                 let is_long = parts[5].parse::<bool>().map_err(|_| ())?;
                 Ok(UserAction::PlaceLimitOrder { market_name, price, leverage, amount, is_long })
-            }
-            // "chart" if parts.len() == 3 => {
-            //     let market_name = parts[1].to_string();
-            //     let interval = parts[2].to_string();
-            //     Ok(UserAction::Chart { market_name, interval })
-            // },
-            // "op" if parts.len() == 3 => {
-            //     let is_long = parts[1].parse::<bool>().map_err(|_| ())?;
-            //     let market_name = parts[2].to_string();
-            //     Ok(UserAction::OpenPosition { is_long, market_name })
-            // },
+            },
+            "export_pk" => Ok(UserAction::ExportPk),
+            "change_notification" => Ok(UserAction::ChangeNotificationPreferences),
+            "slippage" => Ok(UserAction::Slippage),
             _ => Err(()),
         }
     }

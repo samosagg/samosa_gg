@@ -41,7 +41,7 @@ pub async fn init() -> anyhow::Result<(HttpServer, TelegramBot<Cache>)> {
         .context("Failed to initialize market")?;
 
     Ok((
-        HttpServer::new(Arc::clone(&config), Arc::clone(&pool)),
+        HttpServer::new(Arc::clone(&config), Arc::clone(&pool), Arc::clone(&aptos_client)),
         TelegramBot::new(
             Arc::clone(&config),
             Arc::clone(&pool),

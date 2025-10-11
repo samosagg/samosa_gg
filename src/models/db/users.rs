@@ -43,6 +43,17 @@ impl User {
             .optional()
     }
 
+    pub async fn get_by_connected_address(
+        address: String,
+        conn: &mut DbPoolConnection<'_>
+    ) -> diesel::QueryResult<Option<Self>> {
+        users::table
+            .filter(users::connected_wallet.eq(Some(address)))
+            .select(users::all_columns)
+            .first::<Self>(conn).await
+            .optional()
+    }
+
     pub fn to_db_tg_user(
         tg_id: i64,
         tg_username: Option<String>,

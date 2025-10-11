@@ -12,7 +12,7 @@ use crate::{
     cache::{Cache, ICache},
     config::Config,
     telegram_bot::{
-        actions::{cancel::Cancel, limit_order_leverage::LimitOrderLeverage, order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder, place_order::PlaceOrder, CallbackQueryProcessor, UserAction}, commands::{dashboard::Dashboard, limit::Limit, long::Long, mint::Mint, short::Short, start::Start, CommandProcessor, PrivateCommand}, states::{limit_order_margin::LimitOrderMargin, limit_pair::LimitPair, limit_price::LimitPrice, order_margin::OrderMargin, order_pair::OrderPair, PendingState, StateProcessor}
+        actions::{cancel::Cancel, change_notification::ChangeNotification, export_pk::ExportPk, limit_order_leverage::LimitOrderLeverage, order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder, place_order::PlaceOrder, slippage::Slippage, CallbackQueryProcessor, UserAction}, commands::{dashboard::Dashboard, limit::Limit, long::Long, mint::Mint, settings::Settings, short::Short, start::Start, CommandProcessor, PrivateCommand}, states::{limit_order_margin::LimitOrderMargin, limit_pair::LimitPair, limit_price::LimitPrice, order_margin::OrderMargin, order_pair::OrderPair, PendingState, StateProcessor}
     },
     utils::{aptos_client::AptosClient, database_utils::ArcDbPool},
 };
@@ -92,7 +92,7 @@ async fn private_commands_handler(
         PrivateCommand::Long => Box::new(Long),
         PrivateCommand::Short => Box::new(Short),
         PrivateCommand::Limit => Box::new(Limit),
-        // PrivateCommand::Settings => Box::new(Settings),
+        PrivateCommand::Settings => Box::new(Settings),
         // PrivateCommand::Terminal => Box::new(Terminal),
         // PrivateCommand::Chart => Box::new(Chart),
         // PrivateCommand::Positions => Box::new(Positions),
@@ -184,6 +184,9 @@ async fn handle_callback_query(
                 Ok(UserAction::Cancel) => Some(Box::new(Cancel)),
                 Ok(UserAction::LimitOrderLeverage { market_name, price, leverage }) => Some(Box::new(LimitOrderLeverage{ market_name, price, leverage })),
                 Ok(UserAction::PlaceLimitOrder { market_name, price, leverage, amount, is_long }) => Some(Box::new(PlaceLimitOrder{ market_name, price, leverage, amount, is_long })),
+                Ok(UserAction::ExportPk) => Some(Box::new(ExportPk)),
+                Ok(UserAction::ChangeNotificationPreferences) => Some(Box::new(ChangeNotification)),
+                Ok(UserAction::Slippage) => Some(Box::new(Slippage)),
                 Err(_) => {
                     tracing::warn!("Unknown callback: {}", data);
                     None
