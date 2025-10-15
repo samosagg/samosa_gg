@@ -1,5 +1,4 @@
 use axum::{
-    extract::State,
     http::{Response, StatusCode},
 };
 pub async fn check() -> Response<String> {

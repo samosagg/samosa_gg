@@ -1,10 +1,9 @@
 use crate::{
     cache::{Cache, ICache},
     models::db::users::User,
-    telegram_bot::{TelegramBot, actions::UserAction, escape_markdown_v2, states::StateProcessor},
+    telegram_bot::{TelegramBot, actions::UserAction, states::StateProcessor},
     utils::{
         database_connection::get_db_connection,
-        perps_math::{liquidation_price, notional_price, position_size, position_value},
         view_requests::view_fa_balance_request,
     },
 };

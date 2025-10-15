@@ -118,7 +118,7 @@ pub async fn connect_wallet(
         };
         let new_user = User {
             id: Uuid::new_v4(),
-            address: standardize_address(&req.address),
+            address: standardize_address(&address),
             connected_wallet: Some(req.address.clone()),
             public_key: public_key,
             slippage: 20,

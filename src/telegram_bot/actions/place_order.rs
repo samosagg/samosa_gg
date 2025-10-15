@@ -14,7 +14,7 @@ use crate::{
     telegram_bot::{TelegramBot, actions::CallbackQueryProcessor},
     utils::{
         database_connection::get_db_connection,
-        decibel_transaction::{deposit_to_subaccount_at, place_order_to_subaccount},
+        decibel_transaction::place_order_to_subaccount,
         perps_math::{notional_price, position_size, position_value},
         view_requests::view_primary_subaccount,
     },

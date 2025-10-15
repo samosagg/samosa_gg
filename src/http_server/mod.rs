@@ -8,14 +8,12 @@ use crate::{
     config::Config,
     http_server::{
         controllers::{auth, health},
-        middlewares::authentication,
     },
     utils::{aptos_client::AptosClient, database_utils::ArcDbPool, shutdown_utils},
 };
 use axum::{
     Router,
     extract::DefaultBodyLimit,
-    middleware,
     routing::{get, post},
 };
 use tokio::net::TcpListener;
@@ -124,8 +122,8 @@ impl HttpServer {
             }
         });
 
-        let pool = Arc::clone(&self.pool);
-        let jwt_secret = self.config.jwt_config.secret.to_string();
+        // let pool = Arc::clone(&self.pool);
+        // let jwt_secret = self.config.jwt_config.secret.to_string();
 
         let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
             .route("/health", get(health::check))
