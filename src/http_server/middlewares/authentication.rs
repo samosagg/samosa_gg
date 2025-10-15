@@ -14,13 +14,13 @@ use serde::{Deserialize, Serialize};
 pub struct Claims {
     pub id: String,
     pub exp: usize,
-    pub iat: usize
+    pub iat: usize,
 }
 // pub async fn tg_authentication(
 //     mut req: Request,
 //     next: Next,
 //     pool: ArcDbPool,
-//     jwt_secret: String 
+//     jwt_secret: String
 // ) -> Result<Response, Response> {
 //     let auth_header = req.headers_mut().get(header::AUTHORIZATION);
 //     let token = auth_header
@@ -32,8 +32,8 @@ pub struct Claims {
 //         .ok_or(response_401_with_const())?;
 
 //     let token_data = decode::<TelegramClaims>(
-//         token, 
-//         &DecodingKey::from_secret(jwt_secret.as_ref()), 
+//         token,
+//         &DecodingKey::from_secret(jwt_secret.as_ref()),
 //         &Validation::default()
 //     ).map_err(|e| response_401_unhandled_err(e))?;
 

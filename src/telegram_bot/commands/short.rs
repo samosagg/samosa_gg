@@ -22,9 +22,9 @@ impl CommandProcessor for Short {
             state.insert(msg.chat.id, PendingState::OrderPair { is_long: false });
         }
 
-        bot.send_message(chat_id, "Write ticker e.g. APT/USD").await?;
+        bot.send_message(chat_id, "Write ticker e.g. APT/USD")
+            .await?;
 
         Ok(())
     }
 }
-

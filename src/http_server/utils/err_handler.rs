@@ -1,4 +1,8 @@
-use axum::{http::StatusCode, Json, response::{IntoResponse, Response}};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use jsonwebtoken::errors::Error;
 use serde::Serialize;
 use utoipa::ToSchema;

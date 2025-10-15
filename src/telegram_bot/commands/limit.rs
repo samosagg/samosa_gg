@@ -22,9 +22,9 @@ impl CommandProcessor for Limit {
             state.insert(msg.chat.id, PendingState::LimitPair);
         }
 
-        bot.send_message(chat_id, "Write ticker e.g. APT/USD").await?;
+        bot.send_message(chat_id, "Write ticker e.g. APT/USD")
+            .await?;
 
         Ok(())
     }
 }
-

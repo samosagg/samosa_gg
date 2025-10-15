@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
 use crate::{
-    cache::Cache, models::db::users::User, telegram_bot::{commands::CommandProcessor, TelegramBot}, utils::{database_connection::get_db_connection, view_requests::view_fa_balance_request}
+    cache::Cache,
+    models::db::users::User,
+    telegram_bot::{TelegramBot, commands::CommandProcessor},
+    utils::{database_connection::get_db_connection, view_requests::view_fa_balance_request},
 };
 use anyhow::Context;
-use teloxide::{prelude::*, types::ParseMode,
-};
+use teloxide::{prelude::*, types::ParseMode};
 pub struct Dashboard;
 
 #[async_trait::async_trait]
@@ -27,22 +29,32 @@ impl CommandProcessor for Dashboard {
         let db_user = if let Some(existing_user) = maybe_existing_user {
             existing_user
         } else {
-            bot.send_message(chat_id, "Wallet not created yet. Type /start to create wallet").await?;
-            return Ok(())
+            bot.send_message(
+                chat_id,
+                "Wallet not created yet. Type /start to create wallet",
+            )
+            .await?;
+            return Ok(());
         };
-        let message = bot.send_message(chat_id, "Preparing your dashboard").await?;
-        let request = view_fa_balance_request("0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02", &db_user.address)?;
+        let message = bot
+            .send_message(chat_id, "Preparing your dashboard")
+            .await?;
+        let request = view_fa_balance_request(
+            "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02",
+            &db_user.address,
+        )?;
         let response = cfg.aptos_client.view(&request).await?;
         let balance_json = response.get(0).cloned().unwrap_or(serde_json::json!("0"));
         let balance: u64 = serde_json::from_value::<String>(balance_json)?.parse::<u64>()?;
-        let usdc = balance / 10u64.pow(6);
+        let usdc = (balance as f64) / 10f64.powi(6);
+
         let text = format!(
             "📊 *TradeBot Dashboard*\n\n`{}`\n\n💵 Available Balance: *\\{} USDC*\n\n📂 Active Positions\\: {}",
-            db_user.address,
-            usdc,
-            "No active positions"
+            db_user.address, usdc, "No active positions"
         );
-        bot.edit_message_text(chat_id, message.id, text).parse_mode(ParseMode::MarkdownV2).await?;
+        bot.edit_message_text(chat_id, message.id, text)
+            .parse_mode(ParseMode::MarkdownV2)
+            .await?;
         Ok(())
     }
 }

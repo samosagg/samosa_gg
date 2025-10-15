@@ -3,12 +3,41 @@ use std::str::FromStr;
 use anyhow::Ok;
 use aptos_sdk::{
     bcs,
-    move_types::{identifier::Identifier, language_storage::ModuleId},
+    move_types::{identifier::Identifier, language_storage::{ModuleId, StructTag, TypeTag}},
     types::{
         account_address::AccountAddress,
         transaction::{EntryFunction, TransactionPayload},
     },
 };
+
+pub fn transfer_fungible_asset(fa: &str, to: &str, amount: u64) -> anyhow::Result<TransactionPayload> {
+    let module = ModuleId::new(
+        AccountAddress::ONE,
+        Identifier::new("primary_fungible_store")?,
+    );
+    let to = AccountAddress::from_hex_literal(to)?;
+    let fa = AccountAddress::from_hex_literal(fa)?;
+    let payload = TransactionPayload::EntryFunction(EntryFunction::new(
+        module,
+        Identifier::new("transfer")?,
+        vec![TypeTag::Struct(
+            Box::new(
+                StructTag {
+                    address: AccountAddress::ONE,
+                    module: Identifier::new("fungible_asset")?,
+                    name: Identifier::new("Metadata")?,
+                    type_args: vec![]
+                }
+            )
+        )],
+        vec![
+            bcs::to_bytes(&fa)?,
+            bcs::to_bytes(&to)?,
+            bcs::to_bytes(&amount)?,
+        ],
+    ));
+    Ok(payload)
+}
 
 pub fn delegate_trading_to(
     contract_address: &str,
@@ -64,7 +93,7 @@ pub fn place_order_to_subaccount(
     sl_trigger_price: Option<u64>,
     sl_limit_price: Option<u64>,
     builder_address: Option<AccountAddress>,
-    builder_fees: Option<u64>
+    builder_fees: Option<u64>,
 ) -> anyhow::Result<TransactionPayload> {
     let module = ModuleId::new(
         AccountAddress::from_str(contract_addr)?,

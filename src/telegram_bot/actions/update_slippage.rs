@@ -1,7 +1,5 @@
-// use anyhow::Context;
 use std::sync::Arc;
 use teloxide::{prelude::*, types::ForceReply};
-use uuid::Uuid;
 
 use crate::{
     cache::Cache,
@@ -21,12 +19,9 @@ impl CallbackQueryProcessor for UpdateSlippage {
             .message
             .ok_or_else(|| anyhow::anyhow!("Message missing in callback query"))?;
         let chat_id = msg.chat().id;
-        bot.send_message(
-            chat_id,
-            "Reply with the slippage in % you want to set:",
-        )
-        .reply_markup(ForceReply::new().selective())
-        .await?;
+        bot.send_message(chat_id, "Reply with the slippage in % you want to set:")
+            .reply_markup(ForceReply::new().selective())
+            .await?;
         {
             let mut state = cfg.state.lock().await;
             state.insert(chat_id, PendingState::UpdateSlippage);

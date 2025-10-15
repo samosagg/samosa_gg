@@ -9,9 +9,15 @@ use teloxide::{
 };
 
 use crate::{
-    cache::{Cache, ICache}, models::db::users::User, telegram_bot::{
-        actions::CallbackQueryProcessor, TelegramBot
-    }, utils::{database_connection::get_db_connection, decibel_transaction::{deposit_to_subaccount_at, place_order_to_subaccount}, perps_math::{notional_price, position_size, position_value}, view_requests::view_primary_subaccount}
+    cache::{Cache, ICache},
+    models::db::users::User,
+    telegram_bot::{TelegramBot, actions::CallbackQueryProcessor},
+    utils::{
+        database_connection::get_db_connection,
+        decibel_transaction::{deposit_to_subaccount_at, place_order_to_subaccount},
+        perps_math::{notional_price, position_size, position_value},
+        view_requests::view_primary_subaccount,
+    },
 };
 
 pub struct PlaceLimitOrder {
@@ -36,14 +42,30 @@ impl CallbackQueryProcessor for PlaceLimitOrder {
         let from = callback_query.from;
         let tg_id = from.id.0 as i64;
         let chat_id = msg.chat().id;
-        let market = cfg.cache.get_market(&self.market_name).await.ok_or_else(|| anyhow::anyhow!("Unable to get market. Please try again"))?;
-        let asset_context = cfg.cache.get_asset_context(&market.market_name).await.ok_or_else(|| anyhow::anyhow!("Unable to get market data. Please try again"))?;
+        let market = cfg
+            .cache
+            .get_market(&self.market_name)
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Unable to get market. Please try again"))?;
+        let asset_context = cfg
+            .cache
+            .get_asset_context(&market.market_name)
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Unable to get market data. Please try again"))?;
         let mut conn = get_db_connection(&cfg.pool).await?;
-        let db_user = User::get_by_telegram_id(tg_id, &mut conn).await?.ok_or_else(|| anyhow::anyhow!("Wallet not created yet. Type /start to create wallet"))?;
+        let db_user = User::get_by_telegram_id(tg_id, &mut conn)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("Wallet not created yet. Type /start to create wallet")
+            })?;
         let request = view_primary_subaccount(&cfg.config.contract_address, &db_user.address)?;
         let response = cfg.aptos_client.view(&request).await?;
-        let value = response.get(0).ok_or_else(|| anyhow::anyhow!("Primary subaccount not found"))?;
-        let subaccount = value.as_str().ok_or_else(|| anyhow::anyhow!("Expected primary subaccount as string"))?;
+        let value = response
+            .get(0)
+            .ok_or_else(|| anyhow::anyhow!("Primary subaccount not found"))?;
+        let subaccount = value
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Expected primary subaccount as string"))?;
         let entry_price = asset_context.mark_price.clone();
         let notional_price = notional_price(&self.amount, self.leverage);
         let position_size = position_size(&notional_price, &entry_price);
@@ -51,7 +73,7 @@ impl CallbackQueryProcessor for PlaceLimitOrder {
 
         let scaled_price = &self.price * BigDecimal::from_str("100000000")?;
         let price = scaled_price.with_scale(0).to_string().parse::<u64>()?;
-        // size 
+        // size
         let rounded_size = order_size.with_scale(2);
         let scaled_size = &rounded_size * BigDecimal::from_str("100000")?;
         let size = scaled_size.with_scale(0).to_string().parse::<u64>()?;
@@ -59,20 +81,17 @@ impl CallbackQueryProcessor for PlaceLimitOrder {
         let scaled_amount = &self.amount * BigDecimal::from_str("1000000")?;
         let amt = scaled_amount.with_scale(0).to_string().parse::<u64>()?;
         let payload = deposit_to_subaccount_at(
-            &cfg.config.contract_address, 
-            subaccount, 
-            "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02", 
-            amt
+            &cfg.config.contract_address,
+            subaccount,
+            "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02",
+            amt,
         )?;
-        let txn =  cfg
+        let txn = cfg
             .aptos_client
             .sign_txn_with_turnkey_and_fee_payer(&db_user.address, &db_user.public_key, payload)
             .await?;
 
-        let txn_hash = cfg
-            .aptos_client
-            .submit_transaction_and_wait(txn)
-            .await?;
+        let txn_hash = cfg.aptos_client.submit_transaction_and_wait(txn).await?;
 
         tracing::info!(
             "{} deposited to subaccount {}: https://explorer.aptoslabs.com/txn/{}?network=decibel",
@@ -81,32 +100,29 @@ impl CallbackQueryProcessor for PlaceLimitOrder {
             txn_hash.clone()
         );
         let payload = place_order_to_subaccount(
-            &cfg.config.contract_address, 
-            subaccount, 
-            &market.market_addr, 
-            price, 
-            size, 
-            self.is_long, 
-            2, 
-            false, 
-            None, 
-            None, 
-            None, 
-            None, 
-            None, 
-            None, 
-            None, 
-            None
+            &cfg.config.contract_address,
+            subaccount,
+            &market.market_addr,
+            price,
+            size,
+            self.is_long,
+            2,
+            false,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
         )?;
-        let txn =  cfg
+        let txn = cfg
             .aptos_client
             .sign_txn_with_turnkey_and_fee_payer(&db_user.address, &db_user.public_key, payload)
             .await?;
 
-        let txn_hash = cfg
-            .aptos_client
-            .submit_transaction_and_wait(txn)
-            .await?;
+        let txn_hash = cfg.aptos_client.submit_transaction_and_wait(txn).await?;
 
         tracing::info!(
             "{} placed order to subaccount {}: https://explorer.aptoslabs.com/txn/{}?network=decibel",
@@ -115,11 +131,7 @@ impl CallbackQueryProcessor for PlaceLimitOrder {
             txn_hash.clone()
         );
 
-        let order_type = if self.is_long {
-            "long" 
-        } else {
-            "short"
-        };
+        let order_type = if self.is_long { "long" } else { "short" };
         bot.send_message(   
             chat_id,    
             format!("✅ Trade opened! <b>{} {} {}x</b> for <b>{} USDC</b> at <b>${}</b> <a href='https://explorer.aptoslabs.com/txn/{}?network=decibel'>View Txn</a>", self.market_name, order_type.to_uppercase(), self.leverage, self.amount, self.price.clone(), txn_hash),

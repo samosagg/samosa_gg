@@ -1,11 +1,27 @@
 use aptos_indexer_processor_sdk::utils::convert::standardize_address;
-use axum::{extract::State, response::{Response, IntoResponse}, Json};
+use axum::{
+    Json,
+    extract::State,
+    response::{IntoResponse, Response},
+};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header};
 use uuid::Uuid;
 
-use crate::{http_server::{controllers::InternalState, middlewares::authentication::Claims, utils::err_handler::{response_400_with_const, response_429_with_unhandled_err}}, models::{api::{requests::connect_wallet::ConnectWallet, responses::auth::AuthResponse}, db::users::User}, schema::users, utils::{database_connection::get_db_connection, db_execution::execute_with_better_error}};
-use aptos_crypto::{ed25519::*, Signature, ValidCryptoMaterialStringExt};
+use crate::{
+    http_server::{
+        controllers::InternalState,
+        middlewares::authentication::Claims,
+        utils::err_handler::{response_400_with_const, response_429_with_unhandled_err},
+    },
+    models::{
+        api::{requests::connect_wallet::ConnectWallet, responses::auth::AuthResponse},
+        db::users::User,
+    },
+    schema::users,
+    utils::{database_connection::get_db_connection, db_execution::execute_with_better_error},
+};
+use aptos_crypto::{Signature, ValidCryptoMaterialStringExt, ed25519::*};
 
 pub const ADMIN_TAG: &str = "admin";
 // #[utoipa::path(
@@ -23,7 +39,7 @@ pub const ADMIN_TAG: &str = "admin";
 //     State(state): InternalState,
 //     Extension(db_user): Extension<User>
 // ) -> Response<String> {
-    
+
 //     Response::builder()
 //         .status(StatusCode::OK)
 //         .body("OK".into())
@@ -41,21 +57,26 @@ pub const AUTH_TAG: &str = "auth";
 )]
 pub async fn connect_wallet(
     State(state): InternalState,
-    Json(req): Json<ConnectWallet>
+    Json(req): Json<ConnectWallet>,
 ) -> Response {
     let mut conn = match get_db_connection(&state.pool).await {
         Ok(conn) => conn,
         Err(_) => {
-            return response_429_with_unhandled_err(anyhow::anyhow!("Failed to get database connection"))
+            return response_429_with_unhandled_err(anyhow::anyhow!(
+                "Failed to get database connection"
+            ));
         }
     };
 
-    let maybe_existing_user = match User::get_by_connected_address(req.address.clone(), &mut conn).await {
-        Ok(maybe_existing_user) => maybe_existing_user,
-        Err(_) => {
-            return response_429_with_unhandled_err(anyhow::anyhow!("Failed to execute get user query"))
-        }
-    };
+    let maybe_existing_user =
+        match User::get_by_connected_address(req.address.clone(), &mut conn).await {
+            Ok(maybe_existing_user) => maybe_existing_user,
+            Err(_) => {
+                return response_429_with_unhandled_err(anyhow::anyhow!(
+                    "Failed to execute get user query"
+                ));
+            }
+        };
 
     let db_user = if let Some(existing_user) = maybe_existing_user {
         existing_user
@@ -65,24 +86,34 @@ pub async fn connect_wallet(
         let public_key = match Ed25519PublicKey::from_encoded_string(&req.public_key) {
             Ok(public_key) => public_key,
             Err(_) => {
-                return response_429_with_unhandled_err(anyhow::anyhow!("Failed to get public key from bytes"))
+                return response_429_with_unhandled_err(anyhow::anyhow!(
+                    "Failed to get public key from bytes"
+                ));
             }
         };
 
         let signature = match Ed25519Signature::from_encoded_string(&req.signature) {
             Ok(signature) => signature,
             Err(_) => {
-                return response_429_with_unhandled_err(anyhow::anyhow!("Failed to get signature from bytes"))
+                return response_429_with_unhandled_err(anyhow::anyhow!(
+                    "Failed to get signature from bytes"
+                ));
             }
-        }; 
+        };
         if let Err(_) = signature.verify_arbitrary_msg(req.message.as_bytes(), &public_key) {
-            return response_429_with_unhandled_err(anyhow::anyhow!("Signature verification failed"))
+            return response_429_with_unhandled_err(anyhow::anyhow!(
+                "Signature verification failed"
+            ));
         };
         let wallet_name: String = format!("apt-{}", &req.address);
-        let (wallet_id, address, public_key) = match state.aptos_client.create_new_wallet_on_turnkey(&wallet_name).await {
+        let (wallet_id, address, public_key) = match state
+            .aptos_client
+            .create_new_wallet_on_turnkey(&wallet_name)
+            .await
+        {
             Ok((wallet_id, address, public_key)) => (wallet_id, address, public_key),
             Err(_) => {
-                return response_429_with_unhandled_err(anyhow::anyhow!("Failed to create wallet"))
+                return response_429_with_unhandled_err(anyhow::anyhow!("Failed to create wallet"));
             }
         };
         let new_user = User {
@@ -94,16 +125,16 @@ pub async fn connect_wallet(
             tg_id: None,
             tg_username: None,
             wallet_id,
-            degen_mode: false
+            degen_mode: false,
         };
-        let query = diesel::insert_into(users::table)  
+        let query = diesel::insert_into(users::table)
             .values(new_user.clone())
             .on_conflict(users::connected_wallet)
             .do_nothing();
         match execute_with_better_error(&mut conn, vec![query]).await {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(_) => {
-                return response_429_with_unhandled_err(anyhow::anyhow!("Failed to execute query"))
+                return response_429_with_unhandled_err(anyhow::anyhow!("Failed to execute query"));
             }
         }
         new_user
@@ -137,9 +168,7 @@ pub async fn connect_wallet(
     );
 
     return match token_result {
-        Ok(token) => Json(AuthResponse{ token }).into_response(),
-        Err(_) => {
-            response_400_with_const()
-        }
+        Ok(token) => Json(AuthResponse { token }).into_response(),
+        Err(_) => response_400_with_const(),
     };
 }

@@ -1,17 +1,11 @@
 use std::sync::Arc;
 
 use bigdecimal::BigDecimal;
-use teloxide::{
-    Bot,
-    prelude::Requester,
-    types::CallbackQuery,
-};
+use teloxide::{Bot, prelude::Requester, types::CallbackQuery};
 
 use crate::{
     cache::Cache,
-    telegram_bot::{
-        TelegramBot, actions::CallbackQueryProcessor, states::PendingState,
-    },
+    telegram_bot::{TelegramBot, actions::CallbackQueryProcessor, states::PendingState},
 };
 
 pub struct LimitOrderLeverage {
@@ -37,11 +31,16 @@ impl CallbackQueryProcessor for LimitOrderLeverage {
             let mut state = cfg.state.lock().await;
             state.insert(
                 chat_id,
-                PendingState::LimitOrderMargin { market_name: self.market_name.clone(), price: self.price.clone(), leverage: self.leverage } 
+                PendingState::LimitOrderMargin {
+                    market_name: self.market_name.clone(),
+                    price: self.price.clone(),
+                    leverage: self.leverage,
+                },
             );
         }
-        
-        bot.send_message(chat_id, "Write USDC amount e.g. 10").await?;
+
+        bot.send_message(chat_id, "Write USDC amount e.g. 10")
+            .await?;
         Ok(())
     }
 }

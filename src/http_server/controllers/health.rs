@@ -1,4 +1,7 @@
-use axum::{extract::State, http::{StatusCode, Response}};
+use axum::{
+    extract::State,
+    http::{Response, StatusCode},
+};
 pub async fn check() -> Response<String> {
     Response::builder()
         .status(StatusCode::OK)

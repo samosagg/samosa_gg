@@ -1,11 +1,11 @@
 pub mod cache;
 pub mod config;
 pub mod http_server;
+pub mod models;
 #[path = "db_migrations/schema.rs"]
 pub mod schema;
 pub mod telegram_bot;
 pub mod utils;
-pub mod models;
 
 use std::sync::Arc;
 
@@ -41,7 +41,11 @@ pub async fn init() -> anyhow::Result<(HttpServer, TelegramBot<Cache>)> {
         .context("Failed to initialize market")?;
 
     Ok((
-        HttpServer::new(Arc::clone(&config), Arc::clone(&pool), Arc::clone(&aptos_client)),
+        HttpServer::new(
+            Arc::clone(&config),
+            Arc::clone(&pool),
+            Arc::clone(&aptos_client),
+        ),
         TelegramBot::new(
             Arc::clone(&config),
             Arc::clone(&pool),

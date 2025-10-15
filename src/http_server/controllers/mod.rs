@@ -4,7 +4,7 @@ use axum::extract::State;
 
 use crate::http_server::HttpServer;
 
-pub mod health;
 pub mod auth;
+pub mod health;
 
 type InternalState = State<Arc<HttpServer>>;

@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub struct LimitPrice {
-    pub market_name: String
+    pub market_name: String,
 }
 
 #[async_trait::async_trait]
@@ -38,7 +38,11 @@ impl StateProcessor for LimitPrice {
             let mut state = cfg.state.lock().await;
             state.remove(&chat_id);
         }
-        let market = cfg.cache.get_market(&self.market_name).await.ok_or_else(|| anyhow::anyhow!("Unable to get market. Please try again"))?;
+        let market = cfg
+            .cache
+            .get_market(&self.market_name)
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Unable to get market. Please try again"))?;
         let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
         let mut row: Vec<InlineKeyboardButton> = vec![];
         for leverage in 1..=market.max_leverage {

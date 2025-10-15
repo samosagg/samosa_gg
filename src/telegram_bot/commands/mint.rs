@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use crate::{
-    cache::Cache, models::db::users::User, telegram_bot::{commands::CommandProcessor, TelegramBot}, utils::{database_connection::get_db_connection, decibel_transaction::mint}
+    cache::Cache,
+    models::db::users::User,
+    telegram_bot::{TelegramBot, commands::CommandProcessor},
+    utils::{database_connection::get_db_connection, decibel_transaction::mint},
 };
 use anyhow::Context;
 use teloxide::prelude::*;
@@ -56,15 +59,10 @@ impl CommandProcessor for Mint {
             db_user.address,
             hash
         );
-        
 
-        bot.edit_message_text(
-            chat_id,
-            message.id,
-            "Faucet minted successfully",
-        )
-        .parse_mode(ParseMode::MarkdownV2)
-        .await?;
+        bot.edit_message_text(chat_id, message.id, "Faucet minted successfully")
+            .parse_mode(ParseMode::MarkdownV2)
+            .await?;
 
         Ok(())
     }

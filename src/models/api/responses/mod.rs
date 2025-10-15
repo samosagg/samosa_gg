@@ -6,7 +6,7 @@ use utoipa::ToSchema;
 #[derive(Serialize, ToSchema)]
 pub struct HttpResponseConstErr {
     pub code: &'static str,
-    pub msg: &'static str
+    pub msg: &'static str,
 }
 
 pub const UNAUTHORIZED_ERR: HttpResponseConstErr = HttpResponseConstErr {

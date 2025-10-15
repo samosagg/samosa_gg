@@ -9,7 +9,7 @@ use crate::{
 
 pub struct OpenPosition {
     pub market_name: String,
-    pub is_long: bool
+    pub is_long: bool,
 }
 
 #[async_trait::async_trait]

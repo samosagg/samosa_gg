@@ -32,11 +32,13 @@ pub fn view_fa_balance_request(
 
 pub fn view_primary_subaccount(
     contract_address: &str,
-    address: &str 
+    address: &str,
 ) -> anyhow::Result<ViewRequest> {
-      let entry_function_id = EntryFunctionId {
+    let entry_function_id = EntryFunctionId {
         module: MoveModuleId {
-            address: AccountAddress::from_str(contract_address)?.to_string().parse()?,
+            address: AccountAddress::from_str(contract_address)?
+                .to_string()
+                .parse()?,
             name: "dex_accounts".parse()?,
         },
         name: "primary_subaccount".parse()?,

@@ -53,8 +53,9 @@ impl StateProcessor for CustomSlippage {
         bot.send_message(
             chat_id,
             format!("Successfully updated slippage to {}%", new_slippage),
-        ).await?;
-       
+        )
+        .await?;
+
         Ok(())
     }
 }

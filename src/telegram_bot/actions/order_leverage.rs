@@ -1,16 +1,10 @@
 use std::sync::Arc;
 
-use teloxide::{
-    Bot,
-    prelude::Requester,
-    types::CallbackQuery,
-};
+use teloxide::{Bot, prelude::Requester, types::CallbackQuery};
 
 use crate::{
     cache::Cache,
-    telegram_bot::{
-        TelegramBot, actions::CallbackQueryProcessor, states::PendingState,
-    },
+    telegram_bot::{TelegramBot, actions::CallbackQueryProcessor, states::PendingState},
 };
 
 pub struct OrderLeverage {
@@ -43,8 +37,9 @@ impl CallbackQueryProcessor for OrderLeverage {
                 },
             );
         }
-        
-        bot.send_message(chat_id, "Write USDC amount e.g. 10").await?;
+
+        bot.send_message(chat_id, "Write USDC amount e.g. 10")
+            .await?;
         Ok(())
     }
 }

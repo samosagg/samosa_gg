@@ -14,7 +14,12 @@ fn initial_margin_ratio(leverage: u8) -> BigDecimal {
     BigDecimal::from(1) / leverage
 }
 
-pub fn liquidation_price(is_long: bool, entry_price: &BigDecimal, leverage: u8, maintenance_margin_ratio: &BigDecimal) -> BigDecimal {
+pub fn liquidation_price(
+    is_long: bool,
+    entry_price: &BigDecimal,
+    leverage: u8,
+    maintenance_margin_ratio: &BigDecimal,
+) -> BigDecimal {
     let initial_margin_ratio = initial_margin_ratio(leverage);
     let one = BigDecimal::from(1);
     let multiplier = if is_long {

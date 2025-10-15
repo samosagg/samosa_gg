@@ -39,7 +39,7 @@
 
 // // Helper function to escape MarkdownV2 characters
 // fn escape_markdown_v2(text: &str) -> String {
-//     let reserved = r"_*[]()~`>#+-=|{}.!"; 
+//     let reserved = r"_*[]()~`>#+-=|{}.!";
 //     let mut escaped = String::new();
 //     for c in text.chars() {
 //         if reserved.contains(c) {
@@ -247,7 +247,7 @@
 //                 InlineKeyboardButton::callback("1d", UserAction::Chart { market_name: market.market_name.clone(), interval: "1d".to_string() }.to_string()),
 //             ],
 //             vec![
-//                 InlineKeyboardButton::callback("📈 Long", UserAction::OpenPosition { is_long: true, market_name: market.market_name.clone() }.to_string()), 
+//                 InlineKeyboardButton::callback("📈 Long", UserAction::OpenPosition { is_long: true, market_name: market.market_name.clone() }.to_string()),
 //                 InlineKeyboardButton::callback("📉 Short", UserAction::OpenPosition { is_long: false, market_name: market.market_name.clone() }.to_string()),
 //             ],
 //         ]);

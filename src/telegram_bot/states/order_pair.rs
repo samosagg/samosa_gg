@@ -29,7 +29,8 @@ impl StateProcessor for OrderPair {
 
         let similar_markets = cfg.cache.get_markets_ilike(&text).await;
         if similar_markets.len() == 0 {
-            bot.send_message(chat_id, "Ticker not found, try again").await?;
+            bot.send_message(chat_id, "Ticker not found, try again")
+                .await?;
             return Ok(());
         }
         let market = similar_markets
@@ -66,7 +67,7 @@ impl StateProcessor for OrderPair {
             .parse_mode(ParseMode::MarkdownV2)
             .reply_markup(kb)
             .await?;
-      
+
         Ok(())
     }
 }

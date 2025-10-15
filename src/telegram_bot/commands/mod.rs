@@ -1,4 +1,6 @@
 pub mod chart;
+pub mod dashboard;
+pub mod limit;
 pub mod long;
 pub mod mint;
 pub mod positions;
@@ -7,8 +9,6 @@ pub mod short;
 pub mod start;
 pub mod terminal;
 pub mod wallet;
-pub mod dashboard;
-pub mod limit;
 
 use std::sync::Arc;
 

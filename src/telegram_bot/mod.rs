@@ -12,7 +12,15 @@ use crate::{
     cache::{Cache, ICache},
     config::Config,
     telegram_bot::{
-        actions::{cancel::Cancel, change_degen_mode::ChangeDegenMode, change_notification::ChangeNotification, export_pk::ExportPk, limit_order_leverage::LimitOrderLeverage, order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder, place_order::PlaceOrder, show_pk::ShowPk, slippage::Slippage, update_slippage::UpdateSlippage, CallbackQueryProcessor, UserAction}, commands::{dashboard::Dashboard, limit::Limit, long::Long, mint::Mint, settings::Settings, short::Short, start::Start, CommandProcessor, PrivateCommand}, states::{custom_slippage::CustomSlippage, limit_order_margin::LimitOrderMargin, limit_pair::LimitPair, limit_price::LimitPrice, order_margin::OrderMargin, order_pair::OrderPair, PendingState, StateProcessor}
+        actions::{
+            cancel::Cancel, change_degen_mode::ChangeDegenMode, change_notification::ChangeNotification, confirm_subaccount_deposit::ConfirmSubaccountDeposit, deposit_to_subaccount::DepositToSubaccount, export_pk::ExportPk, external_withdraw::ExternalWithdraw, limit_order_leverage::LimitOrderLeverage, order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder, place_order::PlaceOrder, show_pk::ShowPk, slippage::Slippage, update_slippage::UpdateSlippage, CallbackQueryProcessor, UserAction
+        },
+        commands::{
+            dashboard::Dashboard, limit::Limit, long::Long, mint::Mint, settings::Settings, short::Short, start::Start, CommandProcessor, PrivateCommand
+        },
+        states::{
+            custom_slippage::CustomSlippage, deposit_to_subaccount::DepositToSubaccount as DepositToSubaccountAmount, external_withdraw_address::ExternalWithdrawAddress, external_withdraw_amount::ExternalWithdrawAmount, limit_order_margin::LimitOrderMargin, limit_pair::LimitPair, limit_price::LimitPrice, order_margin::OrderMargin, order_pair::OrderPair, PendingState, StateProcessor
+        },
     },
     utils::{aptos_client::AptosClient, database_utils::ArcDbPool},
 };
@@ -121,75 +129,60 @@ async fn handle_callback_query(
     if let Some(ref data) = query.data {
         let query_processor: Option<Box<dyn CallbackQueryProcessor + Send + Sync>> =
             match <UserAction as FromStr>::from_str(&data) {
-                // Ok(UserAction::CreateTradingAccount) => Some(Box::new(CreateTradingAccount)),
-                // Ok(UserAction::AddToGroup) => Some(Box::new(AddToGroup)),
-                // Ok(UserAction::JoinExistingClan) => Some(Box::new(JoinExistingClan)),
-                // Ok(UserAction::ChangeDegenMode {
-                //     change_to,
-                //     user_id,
-                //     token,
-                // }) => {
-                //     tracing::info!("Degen mode change callback received: to={}", change_to);
-                //     Some(Box::new(DegenMode {
-                //         change_to,
-                //         user_id,
-                //         token,
-                //     }))
-                // }
-                // Ok(UserAction::ExportPk) => Some(Box::new(ExportPk)),
-                // Ok(UserAction::Accounts { user_id, token }) => {
-                //     tracing::info!(
-                //         "Accounts callback received: user_id={}, token={}",
-                //         user_id,
-                //         token
-                //     );
-                //     Some(Box::new(Accounts { user_id, token }))
-                // }
-                // Ok(UserAction::Slippage) => Some(Box::new(Slippage)),
-                // Ok(UserAction::Stats) => Some(Box::new(Stats)),
-                // Ok(UserAction::Withdraw { user_id, token }) => {
-                //     tracing::info!(
-                //         "Withdraw callback received: user_id={}, token={}",
-                //         user_id,
-                //         token
-                //     );
-                //     Some(Box::new(Withdraw { user_id, token }))
-                // }
-                // Ok(UserAction::Transfer { user_id }) => {
-                //     tracing::info!("Transfer callback received: user_id={}", user_id);
-                //     Some(Box::new(Transfer { user_id }))
-                // }
-                // Ok(UserAction::Balances { user_id }) => {
-                //     tracing::info!("Balances callback received: user_id={}", user_id);
-                //     Some(Box::new(Balances { user_id }))
-                // }
-                // Ok(UserAction::Close) => Some(Box::new(Close)),
-                // Ok(UserAction::UpdateSlippage) => Some(Box::new(UpdateSlippage)),
-                // Ok(UserAction::DepositToSubAccount { subaccount_id }) => {
-                //     Some(Box::new(DepositToSubAccount { subaccount_id }))
-                // }
-                // Ok(UserAction::MarketOrder {
-                //     is_long,
-                //     market_name,
-                //     leverage,
-                // }) => Some(Box::new(AskOrderAmount {
-                //     market_name,
-                //     is_long,
-                //     leverage,
-                // })),
-                // Ok(UserAction::Chart { market_name, interval }) => Some(Box::new(ActionChart { market_name, interval })),
-                // Ok(UserAction::OpenPosition { is_long, market_name }) => Some(Box::new(OpenPosition{ is_long, market_name })),
-                Ok(UserAction::OrderLeverage { market_name, is_long, leverage }) => Some(Box::new(OrderLeverage{ market_name, is_long, leverage })),
-                Ok(UserAction::PlaceOrder { market_name, is_long, leverage, amount }) => Some(Box::new(PlaceOrder{ market_name, is_long, leverage, amount })),
+                Ok(UserAction::OrderLeverage {
+                    market_name,
+                    is_long,
+                    leverage,
+                }) => Some(Box::new(OrderLeverage {
+                    market_name,
+                    is_long,
+                    leverage,
+                })),
+                Ok(UserAction::PlaceOrder {
+                    market_name,
+                    is_long,
+                    leverage,
+                    amount,
+                }) => Some(Box::new(PlaceOrder {
+                    market_name,
+                    is_long,
+                    leverage,
+                    amount,
+                })),
                 Ok(UserAction::Cancel) => Some(Box::new(Cancel)),
-                Ok(UserAction::LimitOrderLeverage { market_name, price, leverage }) => Some(Box::new(LimitOrderLeverage{ market_name, price, leverage })),
-                Ok(UserAction::PlaceLimitOrder { market_name, price, leverage, amount, is_long }) => Some(Box::new(PlaceLimitOrder{ market_name, price, leverage, amount, is_long })),
+                Ok(UserAction::LimitOrderLeverage {
+                    market_name,
+                    price,
+                    leverage,
+                }) => Some(Box::new(LimitOrderLeverage {
+                    market_name,
+                    price,
+                    leverage,
+                })),
+                Ok(UserAction::PlaceLimitOrder {
+                    market_name,
+                    price,
+                    leverage,
+                    amount,
+                    is_long,
+                }) => Some(Box::new(PlaceLimitOrder {
+                    market_name,
+                    price,
+                    leverage,
+                    amount,
+                    is_long,
+                })),
                 Ok(UserAction::ExportPk) => Some(Box::new(ExportPk)),
                 Ok(UserAction::ShowPk) => Some(Box::new(ShowPk)),
                 Ok(UserAction::ChangeNotificationPreferences) => Some(Box::new(ChangeNotification)),
                 Ok(UserAction::Slippage) => Some(Box::new(Slippage)),
                 Ok(UserAction::UpdateSlippage) => Some(Box::new(UpdateSlippage)),
-                Ok(UserAction::ChangeDegenMode { user_id, to }) => Some(Box::new(ChangeDegenMode{ user_id, to })),
+                Ok(UserAction::ChangeDegenMode { user_id, to }) => {
+                    Some(Box::new(ChangeDegenMode { user_id, to }))
+                }
+                Ok(UserAction::DepositToSubaccount) => Some(Box::new(DepositToSubaccount)),
+                Ok(UserAction::ConfirmSubaccountDeposit{ amount }) => Some(Box::new(ConfirmSubaccountDeposit{ amount })),
+                Ok(UserAction::ExternalWithdraw) => Some(Box::new(ExternalWithdraw)),
                 Err(_) => {
                     tracing::warn!("Unknown callback: {}", data);
                     None
@@ -226,43 +219,33 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
 
     if let Some(state) = maybe_state {
         let state_processor: Box<dyn StateProcessor + Send + Sync> = match state {
-            // PendingState::WaitingForOrderMargin {
-            //     is_long,
-            //     market_name,
-            //     leverage,
-            // } => Box::new(OrderMargin {
-            //     market_name,
-            //     is_long,
-            //     leverage,
-            // }),
-            // PendingState::WaitingForSlippage => Box::new(AskSlippage),
-            // PendingState::WaitingForWithdrawAddress { user_id, token } => {
-            //     Box::new(WithdrawAddress { user_id, token })
-            // }
-            // PendingState::WaitingForWithdrawAmount {
-            //     user_id,
-            //     token,
-            //     address,
-            // } => Box::new(WithdrawAmount {
-            //     user_id,
-            //     token,
-            //     address,
-            // }),
-            // PendingState::WaitingForSubAccountDepositAmount {
-            //     wallet_id,
-            //     subaccount_id,
-            //     token,
-            // } => Box::new(DepositToSubaccountAmount {
-            //     wallet_id,
-            //     subaccount_id,
-            //     token,
-            // }),
             PendingState::OrderPair { is_long } => Box::new(OrderPair { is_long }),
-            PendingState::OrderMargin { market_name, is_long, leverage } => Box::new(OrderMargin { market_name, is_long, leverage }),
+            PendingState::OrderMargin {
+                market_name,
+                is_long,
+                leverage,
+            } => Box::new(OrderMargin {
+                market_name,
+                is_long,
+                leverage,
+            }),
             PendingState::LimitPair => Box::new(LimitPair),
             PendingState::LimitPrice { market_name } => Box::new(LimitPrice { market_name }),
-            PendingState::LimitOrderMargin { market_name, price, leverage } => Box::new(LimitOrderMargin { market_name, price, leverage }),
-            PendingState::UpdateSlippage => Box::new(CustomSlippage)
+            PendingState::LimitOrderMargin {
+                market_name,
+                price,
+                leverage,
+            } => Box::new(LimitOrderMargin {
+                market_name,
+                price,
+                leverage,
+            }),
+            PendingState::UpdateSlippage => Box::new(CustomSlippage),
+            PendingState::DepositToSubaccount { address, balance } => {
+                Box::new(DepositToSubaccountAmount { address, balance })
+            },
+            PendingState::ExternalWithdrawAmount{ balance } => Box::new(ExternalWithdrawAmount{ balance }),
+            PendingState::ExternalWithdrawAddress { amount } => Box::new(ExternalWithdrawAddress{ amount })
         };
         if let Err(err) = state_processor.process(cfg, bot.clone(), msg, text).await {
             tracing::error!("Command failed: {:?}", err);

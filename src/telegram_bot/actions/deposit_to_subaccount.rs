@@ -1,120 +1,94 @@
-// // use anyhow::Context;
-// use std::sync::Arc;
-// use teloxide::{
-//     prelude::*,
-//     types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode},
-// };
-// use uuid::Uuid;
+use std::{str::FromStr, sync::Arc};
+use bigdecimal::BigDecimal;
+use teloxide::{
+    prelude::*,
+    types::{ForceReply, ParseMode},
+};
 
-// use crate::{
-//     cache::Cache,
-//     db::{subaccounts::SubAccount, users::User, wallets::Wallet},
-//     telegram_bot::{
-//         TelegramBot,
-//         actions::{CallbackQueryProcessor, UserAction},
-//         build_text_for_contact_support,
-//         commands::mint::build_text_for_wallet_not_created,
-//         states::PendingState,
-//     },
-//     utils::database_connection::get_db_connection,
-// };
+use crate::{
+    cache::Cache,
+    models::db::users::User,
+    telegram_bot::{
+        TelegramBot,
+        actions::CallbackQueryProcessor,
+        states::PendingState,
+    },
+    utils::{
+        database_connection::get_db_connection,
+        view_requests::{view_fa_balance_request, view_primary_subaccount},
+    },
+};
 
-// pub struct DepositToSubAccount {
-//     pub subaccount_id: Option<Uuid>,
-// }
+pub struct DepositToSubaccount;
 
-// #[async_trait::async_trait]
-// impl CallbackQueryProcessor for DepositToSubAccount {
-//     async fn process(
-//         &self,
-//         cfg: Arc<TelegramBot<Cache>>,
-//         bot: Bot,
-//         callback_query: CallbackQuery,
-//     ) -> anyhow::Result<()> {
-//         let msg = callback_query
-//             .message
-//             .ok_or_else(|| anyhow::anyhow!("Message missing in callback query"))?;
-//         let from = callback_query.from;
-//         let chat_id = msg.chat().id;
-//         let telegram_id = from.id.0 as i64;
-//         let message_id = msg.id();
-//         let mut conn = get_db_connection(&cfg.pool).await?;
+#[async_trait::async_trait]
+impl CallbackQueryProcessor for DepositToSubaccount {
+    async fn process(
+        &self,
+        cfg: Arc<TelegramBot<Cache>>,
+        bot: Bot,
+        callback_query: CallbackQuery,
+    ) -> anyhow::Result<()> {
+        let msg = callback_query
+            .message
+            .ok_or_else(|| anyhow::anyhow!("Message missing in callback query"))?;
+        let from = callback_query.from;
+        let chat_id = msg.chat().id;
+        let tg_id = from.id.0 as i64;
 
-//         let maybe_existing_user = User::get_by_telegram_id(from.id.0 as i64, &mut conn).await?;
-//         let db_user = if let Some(existing_user) = maybe_existing_user {
-//             existing_user
-//         } else {
-//             bot.send_message(chat_id, build_text_for_wallet_not_created())
-//                 .parse_mode(ParseMode::MarkdownV2)
-//                 .await?;
-//             return Ok(());
-//         };
+        let mut conn = get_db_connection(&cfg.pool).await?;
+        let db_user = User::get_by_telegram_id(tg_id, &mut conn)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("Wallet not created yet. Type /start to create wallet")
+            })?;
+        // request primary
+        let request = view_primary_subaccount(&cfg.config.contract_address, &db_user.address)?;
+        let response = cfg.aptos_client.view(&request).await?;
+        let value = response
+            .get(0)
+            .ok_or_else(|| anyhow::anyhow!("Primary subaccount not found"))?;
+        let subaccount = value
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Expected primary subaccount as string"))?;
+        // balance
+        let request = view_fa_balance_request(
+            "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02",
+            &db_user.address,
+        )?;
+        let response = cfg.aptos_client.view(&request).await?;
+        let balance_json = response.get(0).cloned().unwrap_or(serde_json::json!("0"));
+        let balance_str = serde_json::from_value::<String>(balance_json)?;
+        let balance = BigDecimal::from_str(&balance_str)?;
+        let divisor = BigDecimal::from(10u64.pow(6));
+        let usdc = balance / divisor;
 
-//         let maybe_existing_wallet =
-//             Wallet::get_primary_wallet_by_user_id(db_user.id, &mut conn).await?;
-//         let db_wallet = if let Some(existing_wallet) = maybe_existing_wallet {
-//             existing_wallet
-//         } else {
-//             bot.send_message(chat_id, build_text_for_contact_support())
-//                 .parse_mode(ParseMode::MarkdownV2)
-//                 .await?;
-//             return Ok(());
-//         };
+        let text = format!(
+            "💰 <b>Deposit to Subaccount</b>\n\n\
+            Your main wallet balance: <b>{} USDC</b>\n\
+            Primary subaccount: <code>{}</code>\n\n\
+            Please enter the amount you want to deposit to your subaccount.\n\
+            ⚠️ Make sure you have enough balance in your main wallet.\n\n\
+            After entering the amount, click <b>Confirm Deposit</b> to proceed.",
+            usdc, subaccount
+        );
 
-//         let subaccount_id = if let Some(sub_id) = self.subaccount_id.clone() {
-//             sub_id
-//         } else {
-//             let text = "Choose a subaccount to deposit to:";
-//             let subaccounts =
-//                 SubAccount::get_subaccounts_by_wallet_id(db_wallet.id, &mut conn).await?;
-//             let mut keyboard: Vec<Vec<InlineKeyboardButton>> = vec![];
-//             let mut row: Vec<InlineKeyboardButton> = vec![];
-//             if !subaccounts.is_empty() {
-//                 for (_, subaccount) in subaccounts.iter().enumerate() {
-//                     let callback_data = UserAction::DepositToSubAccount {
-//                         subaccount_id: Some(subaccount.id.clone()),
-//                     }
-//                     .to_string();
-//                     row.push(InlineKeyboardButton::callback(
-//                         format!("{}", subaccount.address),
-//                         callback_data,
-//                     ));
-//                     if row.len() == 2 {
-//                         keyboard.push(row);
-//                         row = vec![];
-//                     }
-//                 }
-//             };
-//             if !row.is_empty() {
-//                 keyboard.push(row);
-//             };
-//             let kb = InlineKeyboardMarkup::new(keyboard);
-//             bot.edit_message_text(chat_id, message_id, text)
-//                 .reply_markup(kb)
-//                 .await?;
-//             return Ok(());
-//         };
-//         // todo deposit
-//         {
-//             let mut state = cfg.state.lock().await;
-//             state.insert(
-//                 chat_id,
-//                 PendingState::WaitingForSubAccountDepositAmount {
-//                     wallet_id: db_wallet.id,
-//                     subaccount_id,
-//                     token: db_user.token.clone(),
-//                 },
-//             );
-//         }
-
-//         bot.send_message(
-//             chat_id,
-//             format!(
-//                 "Enter the amount in {} to transfer to subaccount:",
-//                 db_user.token
-//             ),
-//         )
-//         .await?;
-//         Ok(())
-//     }
-// }
+        bot.send_message(chat_id, text)
+            .parse_mode(ParseMode::Html)
+            .await?;
+        bot.send_message(chat_id, "Reply with the amount in USDC")
+            .reply_markup(ForceReply::new().selective())
+            .await?;
+        {
+            let mut state = cfg.state.lock().await;
+            state.insert(
+                chat_id,
+                PendingState::DepositToSubaccount {
+                    address: subaccount.into(),
+                    balance: usdc
+                },
+            );
+        }
+        Ok(())
+    }
+}
