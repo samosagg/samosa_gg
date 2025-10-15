@@ -93,7 +93,8 @@ pub async fn connect_wallet(
             slippage: 20,
             tg_id: None,
             tg_username: None,
-            wallet_id
+            wallet_id,
+            degen_mode: false
         };
         let query = diesel::insert_into(users::table)  
             .values(new_user.clone())

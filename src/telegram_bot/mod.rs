@@ -12,7 +12,7 @@ use crate::{
     cache::{Cache, ICache},
     config::Config,
     telegram_bot::{
-        actions::{cancel::Cancel, change_notification::ChangeNotification, export_pk::ExportPk, limit_order_leverage::LimitOrderLeverage, order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder, place_order::PlaceOrder, slippage::Slippage, CallbackQueryProcessor, UserAction}, commands::{dashboard::Dashboard, limit::Limit, long::Long, mint::Mint, settings::Settings, short::Short, start::Start, CommandProcessor, PrivateCommand}, states::{limit_order_margin::LimitOrderMargin, limit_pair::LimitPair, limit_price::LimitPrice, order_margin::OrderMargin, order_pair::OrderPair, PendingState, StateProcessor}
+        actions::{cancel::Cancel, change_degen_mode::ChangeDegenMode, change_notification::ChangeNotification, export_pk::ExportPk, limit_order_leverage::LimitOrderLeverage, order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder, place_order::PlaceOrder, show_pk::ShowPk, slippage::Slippage, update_slippage::UpdateSlippage, CallbackQueryProcessor, UserAction}, commands::{dashboard::Dashboard, limit::Limit, long::Long, mint::Mint, settings::Settings, short::Short, start::Start, CommandProcessor, PrivateCommand}, states::{custom_slippage::CustomSlippage, limit_order_margin::LimitOrderMargin, limit_pair::LimitPair, limit_price::LimitPrice, order_margin::OrderMargin, order_pair::OrderPair, PendingState, StateProcessor}
     },
     utils::{aptos_client::AptosClient, database_utils::ArcDbPool},
 };
@@ -185,8 +185,11 @@ async fn handle_callback_query(
                 Ok(UserAction::LimitOrderLeverage { market_name, price, leverage }) => Some(Box::new(LimitOrderLeverage{ market_name, price, leverage })),
                 Ok(UserAction::PlaceLimitOrder { market_name, price, leverage, amount, is_long }) => Some(Box::new(PlaceLimitOrder{ market_name, price, leverage, amount, is_long })),
                 Ok(UserAction::ExportPk) => Some(Box::new(ExportPk)),
+                Ok(UserAction::ShowPk) => Some(Box::new(ShowPk)),
                 Ok(UserAction::ChangeNotificationPreferences) => Some(Box::new(ChangeNotification)),
                 Ok(UserAction::Slippage) => Some(Box::new(Slippage)),
+                Ok(UserAction::UpdateSlippage) => Some(Box::new(UpdateSlippage)),
+                Ok(UserAction::ChangeDegenMode { user_id, to }) => Some(Box::new(ChangeDegenMode{ user_id, to })),
                 Err(_) => {
                     tracing::warn!("Unknown callback: {}", data);
                     None
@@ -259,6 +262,7 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
             PendingState::LimitPair => Box::new(LimitPair),
             PendingState::LimitPrice { market_name } => Box::new(LimitPrice { market_name }),
             PendingState::LimitOrderMargin { market_name, price, leverage } => Box::new(LimitOrderMargin { market_name, price, leverage }),
+            PendingState::UpdateSlippage => Box::new(CustomSlippage)
         };
         if let Err(err) = state_processor.process(cfg, bot.clone(), msg, text).await {
             tracing::error!("Command failed: {:?}", err);

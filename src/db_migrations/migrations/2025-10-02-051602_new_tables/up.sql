@@ -7,24 +7,16 @@ CREATE TABLE users(
     address VARCHAR(66) NOT NULL,
     public_key VARCHAR NOT NULL,
     wallet_id VARCHAR NOT NULL,
-    slippage BIGINT NOT NULL DEFAULT(20)
+    slippage BIGINT NOT NULL DEFAULT(20),
+    degen_mode BOOLEAN NOT NULL DEFAULT(FALSE)
 );
 
--- CREATE TABLE wallets(
---     id UUID PRIMARY KEY NOT NULL,
---     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
---     wallet_id VARCHAR NOT NULL,
---     address VARCHAR(66) NOT NULL,
---     public_key VARCHAR NOT NULL,
---     is_primary BOOLEAN NOT NULL DEFAULT FALSE
--- );
-
--- CREATE TABLE subaccounts(
---     id UUID PRIMARY KEY NOT NULL,
---     wallet_id UUID NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
---     address VARCHAR(66) NOT NULL,
---     is_primary BOOLEAN DEFAULT FALSE
--- );
+CREATE TABLE subaccounts(
+    id UUID PRIMARY KEY NOT NULL,
+    user_id UUID NOT NULL,
+    address VARCHAR(66) NOT NULL,
+    is_primary BOOLEAN DEFAULT(FALSE)
+);
 
 CREATE UNIQUE INDEX unique_tg_id ON users (tg_id)
 WHERE tg_id IS NOT NULL;

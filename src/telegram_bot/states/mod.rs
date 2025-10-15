@@ -3,6 +3,7 @@ pub mod order_margin;
 pub mod limit_pair;
 pub mod limit_price;
 pub mod limit_order_margin;
+pub mod custom_slippage;
 // pub mod ask_slippage;
 // pub mod deposit_to_sub_amount;
 // pub mod withdraw_address;
@@ -52,7 +53,8 @@ pub enum PendingState {
         market_name: String,
         price: BigDecimal,
         leverage: u8
-    }
+    },
+    UpdateSlippage
 }
 
 #[async_trait::async_trait]

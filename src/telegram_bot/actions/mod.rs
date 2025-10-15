@@ -20,6 +20,7 @@ pub mod open_position;
 pub mod limit_order_leverage;
 pub mod place_limit_order;
 pub mod change_notification;
+pub mod show_pk;
 
 use std::{str::FromStr, sync::Arc};
 
@@ -67,8 +68,14 @@ pub enum UserAction {
         is_long: bool
     },
     ExportPk,
+    ShowPk,
     ChangeNotificationPreferences,
     Slippage,
+    UpdateSlippage,
+    ChangeDegenMode {
+        user_id: Uuid,
+        to: bool
+    }
 }
 
 impl ToString for UserAction {
@@ -107,8 +114,11 @@ impl ToString for UserAction {
             UserAction::LimitOrderLeverage { market_name, price, leverage } => format!("limit_leverage|{}|{}|{}", market_name, price, leverage),
             UserAction::PlaceLimitOrder { market_name, price, leverage, amount, is_long } => format!("limit|{}|{}|{}|{}|{}", market_name, price, leverage, amount, is_long),
             UserAction::ExportPk => "export_pk".to_string(),
+            UserAction::ShowPk => "show_pk".to_string(),
             UserAction::ChangeNotificationPreferences => "change_notification".to_string(),
             UserAction::Slippage => "slippage".to_string(),
+            UserAction::ChangeDegenMode { user_id, to} => format!("change_degen|{}|{}", user_id, to),
+            UserAction::UpdateSlippage => "update_slippage".to_string(),
         }
     }
 }
@@ -193,8 +203,17 @@ impl FromStr for UserAction {
                 Ok(UserAction::PlaceLimitOrder { market_name, price, leverage, amount, is_long })
             },
             "export_pk" => Ok(UserAction::ExportPk),
+            "show_pk" => Ok(UserAction::ShowPk),
             "change_notification" => Ok(UserAction::ChangeNotificationPreferences),
             "slippage" => Ok(UserAction::Slippage),
+            "change_degen" if parts.len() == 3 => {
+                let user_id = Uuid::parse_str(parts[1]).map_err(|_| ())?;
+                let to = parts[2].parse::<bool>().map_err(|_| ())?;
+                Ok(UserAction::ChangeDegenMode { user_id, to }) 
+            },
+            "update_slippage" => {
+                Ok(UserAction::UpdateSlippage)
+            },
             _ => Err(()),
         }
     }

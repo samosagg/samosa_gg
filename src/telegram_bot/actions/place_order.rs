@@ -49,9 +49,9 @@ impl CallbackQueryProcessor for PlaceOrder {
         let order_size = position_value(&position_size, &entry_price);
         let slippage: BigDecimal = BigDecimal::from_str("0.2")?; // 20% slippage
         let adjusted_price = if self.is_long {
-            &entry_price * (BigDecimal::from_str("1.0")? - &slippage)
-        } else {
             &entry_price * (BigDecimal::from_str("1.0")? + &slippage)
+        } else {
+            &entry_price * (BigDecimal::from_str("1.0")? - &slippage)
         };  
 
         let rounded_price = adjusted_price.with_scale(2);
@@ -62,30 +62,30 @@ impl CallbackQueryProcessor for PlaceOrder {
         let scaled_size = &rounded_size * BigDecimal::from_str("100000")?;
         let size = scaled_size.with_scale(0).to_string().parse::<u64>()?;
         // deposit amount to subaccount
-        let scaled_amount = &self.amount * BigDecimal::from_str("1000000")?;
-        let amt = scaled_amount.with_scale(0).to_string().parse::<u64>()?;
-        let payload = deposit_to_subaccount_at(
-            &cfg.config.contract_address, 
-            subaccount, 
-            "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02", 
-            amt
-        )?;
-        let txn =  cfg
-            .aptos_client
-            .sign_txn_with_turnkey_and_fee_payer(&db_user.address, &db_user.public_key, payload)
-            .await?;
+        // let scaled_amount = &self.amount * BigDecimal::from_str("1000000")?;
+        // let amt = scaled_amount.with_scale(0).to_string().parse::<u64>()?;
+        // let payload = deposit_to_subaccount_at(
+        //     &cfg.config.contract_address, 
+        //     subaccount, 
+        //     "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02", 
+        //     amt
+        // )?;
+        // let txn: aptos_sdk::types::transaction::SignedTransaction =  cfg
+        //     .aptos_client
+        //     .sign_txn_with_turnkey_and_fee_payer(&db_user.address, &db_user.public_key, payload)
+        //     .await?;
 
-        let txn_hash = cfg
-            .aptos_client
-            .submit_transaction_and_wait(txn)
-            .await?;
+        // let txn_hash = cfg
+        //     .aptos_client
+        //     .submit_transaction_and_wait(txn)
+        //     .await?;
 
-        tracing::info!(
-            "{} deposited to subaccount {}: https://explorer.aptoslabs.com/txn/{}?network=decibel",
-            db_user.address,
-            subaccount,
-            txn_hash.clone()
-        );
+        // tracing::info!(
+        //     "{} deposited to subaccount {}: https://explorer.aptoslabs.com/txn/{}?network=decibel",
+        //     db_user.address,
+        //     subaccount,
+        //     txn_hash.clone()
+        // );
         let payload = place_order_to_subaccount(
             &cfg.config.contract_address, 
             subaccount, 
@@ -93,7 +93,7 @@ impl CallbackQueryProcessor for PlaceOrder {
             price, 
             size, 
             self.is_long, 
-            2, 
+            0, 
             false, 
             None, 
             None, 

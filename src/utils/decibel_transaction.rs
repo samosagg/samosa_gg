@@ -73,10 +73,10 @@ pub fn place_order_to_subaccount(
     let args = vec![
         bcs::to_bytes(&AccountAddress::from_str(subaccount)?)?,
         bcs::to_bytes(&AccountAddress::from_str(market)?)?,
-        // bcs::to_bytes(&price)?,
+        bcs::to_bytes(&price)?,
         bcs::to_bytes(&size)?,
         bcs::to_bytes(&is_buy)?,
-        // bcs::to_bytes(&time_in_force)?,
+        bcs::to_bytes(&time_in_force)?,
         bcs::to_bytes(&is_reduce_only)?,
         bcs::to_bytes(&client_order_id)?,
         bcs::to_bytes(&stop_price)?,
@@ -89,7 +89,7 @@ pub fn place_order_to_subaccount(
     ];
     let payload = TransactionPayload::EntryFunction(EntryFunction::new(
         module,
-        Identifier::new("place_market_order_to_subaccount")?,
+        Identifier::new("place_order_to_subaccount")?,
         vec![],
         args,
     ));

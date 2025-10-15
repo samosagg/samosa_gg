@@ -2,12 +2,12 @@
 use std::sync::Arc;
 use teloxide::{
     prelude::*,
-    types::{InlineKeyboardButton, InlineKeyboardMarkup},
+    types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode},
 };
 
 use crate::{
     cache::Cache,
-    // db::users::User,
+    models::db::users::User,
     telegram_bot::{
         TelegramBot,
         actions::{CallbackQueryProcessor, UserAction},
@@ -25,40 +25,29 @@ impl CallbackQueryProcessor for Slippage {
         bot: Bot,
         callback_query: CallbackQuery,
     ) -> anyhow::Result<()> {
-        // let msg = callback_query
-        //     .message
-        //     .ok_or_else(|| anyhow::anyhow!("Message missing in callback query"))?;
+        let msg = callback_query
+            .message
+            .ok_or_else(|| anyhow::anyhow!("Message missing in callback query"))?;
+        let chat_id = msg.chat().id;
+        let from = callback_query.from;
+        let tg_id = from.id.0 as i64;
+        let mut conn = get_db_connection(&cfg.pool).await?;
+        let db_user = User::get_by_telegram_id(tg_id, &mut conn)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Wallet not created. Type /start to create wallet"))?;
 
-        // let from = callback_query.from;
-
-        // let mut conn = get_db_connection(&cfg.pool).await?;
-
-        // let maybe_existing_user = User::get_by_telegram_id(from.id.0 as i64, &mut conn).await?;
-
-        // let db_user = if let Some(existing_user) = maybe_existing_user {
-        //     existing_user
-        // } else {
-        //     bot.send_message(msg.chat().id, build_text_for_wallet_not_created())
-        //         .await?;
-        //     return Ok(());
-        // };
-
-        // let text = build_text_for_slippage(db_user.slippage);
-        // let kb = build_keyboard_for_slippage_update();
-        // bot.send_message(msg.chat().id, text)
-        //     .reply_markup(kb)
-        //     .await?;
+        let text = format!(
+            "🌊 Slippage Settings\n\nYour current Slippage: <b>{}%</b>\n\n💡 Lower slippage = safer trades but might fail in volatile markets.\n⚡ Higher slippage = faster execution but higher risk.",
+            db_user.slippage
+        );
+        let keyboard = InlineKeyboardMarkup::new(vec![vec![
+            InlineKeyboardButton::callback("✏️ Update", UserAction::UpdateSlippage.to_string()),
+            InlineKeyboardButton::callback("🔻 Close", UserAction::Cancel.to_string()),
+        ]]);
+        bot.send_message(chat_id, text)
+            .reply_markup(keyboard)
+            .parse_mode(ParseMode::Html)
+            .await?;
         Ok(())
     }
 }
-
-// fn build_text_for_slippage(current_slippage: i32) -> String {
-//     format!("Slippage settings\n\nMax Slippage: {}%", current_slippage)
-// }
-
-// fn build_keyboard_for_slippage_update() -> InlineKeyboardMarkup {
-//     InlineKeyboardMarkup::new(vec![vec![
-//         InlineKeyboardButton::callback("Cancel", UserAction::Close.to_string()),
-//         InlineKeyboardButton::callback("Update Slippage", UserAction::UpdateSlippage.to_string()),
-//     ]])
-// }

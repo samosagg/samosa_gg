@@ -17,7 +17,8 @@ pub struct User {
     pub address: String,
     pub public_key: String,
     pub wallet_id: String,
-    pub slippage: i64
+    pub slippage: i64,
+    pub degen_mode: bool
 }
 
 impl User {
@@ -69,7 +70,8 @@ impl User {
             address, 
             public_key, 
             wallet_id ,
-            slippage: 20
+            slippage: 20,
+            degen_mode: false
         }
     }
 }

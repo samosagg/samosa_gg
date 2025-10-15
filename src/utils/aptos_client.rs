@@ -1,8 +1,8 @@
 use anyhow::Context;
 use aptos_crypto::{SigningKey, ValidCryptoMaterialStringExt, ed25519::*, traits::signing_message};
 use aptos_sdk::coin_client::TransferOptions;
-use aptos_sdk::rest_client::Client;
-use aptos_sdk::rest_client::aptos_api_types::ViewRequest;
+use aptos_sdk::rest_client::{Client, Response};
+use aptos_sdk::rest_client::aptos_api_types::{UserTransaction, ViewRequest};
 use aptos_sdk::transaction_builder::TransactionBuilder;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::chain_id::ChainId;

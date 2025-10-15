@@ -28,8 +28,7 @@ impl CommandProcessor for Start {
         let db_user = if let Some(existing_user) = maybe_existing_user {
             existing_user
         } else {
-            // user profile setup
-            let wallet_name = format!("aptaptwallet-{}", tg_id);
+            let wallet_name = format!("aptos-{}", tg_id);
             let (wallet_id, wallet_address, wallet_public_key) =
             cfg.aptos_client.create_new_wallet_on_turnkey(&wallet_name).await?;
             let new_user = User::to_db_tg_user(
@@ -61,16 +60,9 @@ impl CommandProcessor for Start {
             tracing::info!("{} delegated trading: https://explorer.aptoslabs.com/txn/{}?network=decibel", &wallet_address, txn_hash);
             new_user
         };
-        let request = view_fa_balance_request("0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02", &db_user.address)?;
-        let response = cfg.aptos_client.view(&request).await?;
-        let balance_json = response.get(0).cloned().unwrap_or(serde_json::json!("0"));
-        let balance: u64 = serde_json::from_value::<String>(balance_json)?.parse::<u64>()?;
-        let usdc = balance / 10u64.pow(6);
         let text = format!(
-            "👋 Welcome to TradeBot\\!\n\n`{}`\n\n*\\{} USDC*{}\n\n{}",
+            "👋 Welcome to TradeBot\\!\n\n`{}`\n\n{}",
             db_user.address,
-            usdc,
-            if usdc < 15 {"\n\n*Note*\\: Balance too low\\. Type /mint to mint some USDC"} else {""},
             PrivateCommand::descriptions()
         );
         bot.edit_message_text(chat_id, message.id, text).parse_mode(ParseMode::MarkdownV2).await?;
