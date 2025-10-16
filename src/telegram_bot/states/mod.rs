@@ -3,8 +3,6 @@ pub mod deposit_to_subaccount;
 pub mod external_withdraw_address;
 pub mod external_withdraw_amount;
 pub mod limit_order_margin;
-pub mod limit_pair;
-pub mod limit_price;
 pub mod order_margin;
 pub mod order_pair;
 
@@ -24,15 +22,6 @@ pub enum PendingState {
         is_long: bool,
         leverage: u8,
         balance: f64,
-    },
-    LimitPair,
-    LimitPrice {
-        market_name: String,
-    },
-    LimitOrderMargin {
-        market_name: String,
-        price: BigDecimal,
-        leverage: u8,
     },
     UpdateSlippage,
     DepositToSubaccount {

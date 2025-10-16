@@ -4,9 +4,11 @@ pub mod states;
 
 use std::{collections::HashMap, str::FromStr, sync::Arc, time::Duration};
 
+use anyhow::Context;
 use futures_util::lock::Mutex;
-use teloxide::{prelude::*, types::Me, utils::command::BotCommands};
+use teloxide::{prelude::*, types::{InlineKeyboardButton, InlineKeyboardMarkup, Me}, utils::command::BotCommands};
 use tokio::time::sleep;
+use url::Url;
 
 use crate::{
     cache::{Cache, ICache},
@@ -17,7 +19,7 @@ use crate::{
             change_notification::ChangeNotification,
             confirm_subaccount_deposit::ConfirmSubaccountDeposit,
             deposit_to_subaccount::DepositToSubaccount, export_pk::ExportPk,
-            external_withdraw::ExternalWithdraw, limit_order_leverage::LimitOrderLeverage,
+            external_withdraw::ExternalWithdraw,
             order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder,
             place_order::PlaceOrder, show_pk::ShowPk, slippage::Slippage,
             update_slippage::UpdateSlippage,
@@ -30,8 +32,8 @@ use crate::{
             PendingState, StateProcessor, custom_slippage::CustomSlippage,
             deposit_to_subaccount::DepositToSubaccount as DepositToSubaccountAmount,
             external_withdraw_address::ExternalWithdrawAddress,
-            external_withdraw_amount::ExternalWithdrawAmount, limit_order_margin::LimitOrderMargin,
-            limit_pair::LimitPair, limit_price::LimitPrice, order_margin::OrderMargin,
+            external_withdraw_amount::ExternalWithdrawAmount,
+            order_margin::OrderMargin,
             order_pair::OrderPair,
         },
     },
@@ -106,6 +108,31 @@ async fn private_commands_handler(
     cmd: PrivateCommand,
 ) -> anyhow::Result<()> {
     let chat_id = msg.chat.id;
+    let is_private = matches!(msg.chat.kind, teloxide::types::ChatKind::Private(_));
+    if !is_private && !cmd.allowed_in_group() {
+        let me = bot.get_me().await?;
+        let bot_username = me.username.as_ref().ok_or_else(|| anyhow::anyhow!("Failed to get bot username"))?;
+        tracing::info!("{}", bot_username);
+        let text = msg.text().context("Message text is missing")?;
+
+        // Create a longer-lived variable for the URL string
+        let url_str = format!("https://t.me/{}?start={}", bot_username, text.trim_start_matches("/"));
+        tracing::info!("{}", url_str);
+        let url = Url::from_str(&url_str)?;
+
+        let markup = InlineKeyboardMarkup::new(vec![
+            vec![
+                InlineKeyboardButton::url("Go here", url)
+            ]
+        ]);
+
+        bot.send_message(chat_id, text)
+            .reply_markup(markup)
+            .await?;
+
+        return Ok(());
+    }
+
     let command_processor: Box<dyn CommandProcessor + Send + Sync> = match cmd {
         PrivateCommand::Start => Box::new(Start),
         PrivateCommand::Mint => Box::new(Mint),
@@ -114,8 +141,8 @@ async fn private_commands_handler(
         PrivateCommand::Short => Box::new(Short),
         PrivateCommand::Limit => Box::new(Limit),
         PrivateCommand::Settings => Box::new(Settings),
+        PrivateCommand::Chart => Box::new(Settings),
         // PrivateCommand::Terminal => Box::new(Terminal),
-        // PrivateCommand::Chart => Box::new(Chart),
         // PrivateCommand::Positions => Box::new(Positions),
     };
     if let Err(err) = command_processor.process(cfg, bot.clone(), msg).await {
@@ -165,15 +192,6 @@ async fn handle_callback_query(
                     amount,
                 })),
                 Ok(UserAction::Cancel) => Some(Box::new(Cancel)),
-                Ok(UserAction::LimitOrderLeverage {
-                    market_name,
-                    price,
-                    leverage,
-                }) => Some(Box::new(LimitOrderLeverage {
-                    market_name,
-                    price,
-                    leverage,
-                })),
                 Ok(UserAction::PlaceLimitOrder {
                     market_name,
                     price,
@@ -249,17 +267,6 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
                 is_long,
                 leverage,
                 balance,
-            }),
-            PendingState::LimitPair => Box::new(LimitPair),
-            PendingState::LimitPrice { market_name } => Box::new(LimitPrice { market_name }),
-            PendingState::LimitOrderMargin {
-                market_name,
-                price,
-                leverage,
-            } => Box::new(LimitOrderMargin {
-                market_name,
-                price,
-                leverage,
             }),
             PendingState::UpdateSlippage => Box::new(CustomSlippage),
             PendingState::DepositToSubaccount { address, balance } => {

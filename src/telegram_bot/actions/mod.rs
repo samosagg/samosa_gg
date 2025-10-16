@@ -12,7 +12,6 @@ pub mod deposit_to_subaccount;
 pub mod export_pk;
 pub mod external_withdraw;
 pub mod join_existing_clan;
-pub mod limit_order_leverage;
 pub mod open_position;
 pub mod order_leverage;
 pub mod place_limit_order;
@@ -57,11 +56,6 @@ pub enum UserAction {
         amount: BigDecimal,
     },
     Cancel,
-    LimitOrderLeverage {
-        market_name: String,
-        price: BigDecimal,
-        leverage: u8,
-    },
     PlaceLimitOrder {
         market_name: String,
         price: BigDecimal,
@@ -104,11 +98,6 @@ impl ToString for UserAction {
                 amount,
             } => format!("place|{}|{}|{}|{}", market_name, is_long, leverage, amount),
             UserAction::Cancel => "cancel".to_string(),
-            UserAction::LimitOrderLeverage {
-                market_name,
-                price,
-                leverage,
-            } => format!("limit_leverage|{}|{}|{}", market_name, price, leverage),
             UserAction::PlaceLimitOrder {
                 market_name,
                 price,
@@ -167,16 +156,6 @@ impl FromStr for UserAction {
                 })
             }
             "cancel" => Ok(UserAction::Cancel),
-            "limit_leverage" if parts.len() == 4 => {
-                let market_name = parts[1].to_string();
-                let price = BigDecimal::from_str(&parts[2].to_string()).map_err(|_| ())?;
-                let leverage = parts[3].parse::<u8>().map_err(|_| ())?;
-                Ok(UserAction::LimitOrderLeverage {
-                    market_name,
-                    price,
-                    leverage,
-                })
-            }
             "limit" if parts.len() == 6 => {
                 let market_name = parts[1].to_string();
                 let price = BigDecimal::from_str(&parts[2].to_string()).map_err(|_| ())?;

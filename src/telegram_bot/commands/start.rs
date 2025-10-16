@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use crate::{
     cache::Cache,
@@ -14,7 +14,8 @@ use crate::{
     },
 };
 use anyhow::Context;
-use teloxide::{prelude::*, types::ParseMode, utils::command::BotCommands};
+use teloxide::{prelude::*, types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode}, utils::command::BotCommands};
+use url::Url;
 pub struct Start;
 
 #[async_trait::async_trait]
@@ -77,7 +78,20 @@ impl CommandProcessor for Start {
             db_user.address,
             PrivateCommand::descriptions()
         );
+        let me = bot.get_me().await?;
+        let bot_username = me.username.as_ref().ok_or_else(|| anyhow::anyhow!("Failed to get bot username"))?;
+        let markup = InlineKeyboardMarkup::new(
+            vec![
+                vec![
+                    InlineKeyboardButton::callback("Join existing clan", "join"),
+                    InlineKeyboardButton::url("➕ Add To Group",  Url::from_str(
+                        &format!("https://t.me/{}?startgroup=true", bot_username)
+                    )?)
+                ]
+            ]
+        );
         bot.edit_message_text(chat_id, message.id, text)
+            .reply_markup(markup)
             .parse_mode(ParseMode::MarkdownV2)
             .await?;
         Ok(())

@@ -48,8 +48,17 @@ pub enum PrivateCommand {
     Settings,
     // #[command(description = "Open your account on Terminal")]
     // Terminal,
-    // #[command(description = "See chart")]
-    // Chart,
+    #[command(description = "See chart")]
+    Chart,
     // #[command(description = "See postions")]
     // Positions,
+}
+
+impl PrivateCommand {
+    pub fn allowed_in_group(&self) -> bool {
+        matches!(self,
+            PrivateCommand::Chart 
+            // | PrivateCommand::Dashboard
+        )
+    }
 }

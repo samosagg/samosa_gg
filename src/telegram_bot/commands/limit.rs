@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use crate::cache::{Cache, ICache};
 use crate::models::db::users::User;
+use crate::telegram_bot::actions::UserAction;
 use crate::telegram_bot::{TelegramBot, commands::CommandProcessor};
 use crate::utils::database_connection::get_db_connection;
 use crate::utils::decibel_transaction::place_order_to_subaccount;
@@ -11,7 +12,7 @@ use crate::utils::view_requests::{view_fa_balance_request, view_primary_subaccou
 use anyhow::Context;
 use bigdecimal::BigDecimal;
 use teloxide::prelude::*;
-use teloxide::types::ParseMode;
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode};
 
 pub struct Limit;
 
@@ -127,65 +128,96 @@ impl CommandProcessor for Limit {
             return Err(anyhow::anyhow!("⚠️ Amount not specified"));
         };
 
-        let request = view_primary_subaccount(&cfg.config.contract_address, &db_user.address)?;
-        let response = cfg.aptos_client.view(&request).await?;
-        let value = response
-            .get(0)
-            .ok_or_else(|| anyhow::anyhow!("Primary subaccount not found"))?;
-        let subaccount = value
-            .as_str()
-            .ok_or_else(|| anyhow::anyhow!("Expected primary subaccount as string"))?;
-        let entry_price = asset_context.mark_price.clone();
-        let notional_price = notional_price(&amount_to_trade, leverage);
-        let position_size = position_size(&notional_price, &entry_price);
-        let order_size = position_value(&position_size, &entry_price);
+        if db_user.degen_mode {
+            let request = view_primary_subaccount(&cfg.config.contract_address, &db_user.address)?;
+            let response = cfg.aptos_client.view(&request).await?;
+            let value = response
+                .get(0)
+                .ok_or_else(|| anyhow::anyhow!("Primary subaccount not found"))?;
+            let subaccount = value
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("Expected primary subaccount as string"))?;
+            let entry_price = asset_context.mark_price.clone();
+            let notional_price = notional_price(&amount_to_trade, leverage);
+            let position_size = position_size(&notional_price, &entry_price);
+            let order_size = position_value(&position_size, &entry_price);
 
-        let scaled_price = &limit_price * BigDecimal::from_str("100000000")?;
-        let price = scaled_price.with_scale(0).to_string().parse::<u64>()?;
-        // size
-        let rounded_size = order_size.with_scale(2);
-        let scaled_size = &rounded_size * BigDecimal::from_str("100000")?;
-        let size = scaled_size.with_scale(0).to_string().parse::<u64>()?;
+            let scaled_price = &limit_price * BigDecimal::from_str("100000000")?;
+            let price = scaled_price.with_scale(0).to_string().parse::<u64>()?;
+            // size
+            let rounded_size = order_size.with_scale(2);
+            let scaled_size = &rounded_size * BigDecimal::from_str("100000")?;
+            let size = scaled_size.with_scale(0).to_string().parse::<u64>()?;
 
-        let is_buy = if direction == "long" { true } else { false };
-        let payload = place_order_to_subaccount(
-            &cfg.config.contract_address,
-            subaccount,
-            &market.market_addr,
-            price,
-            size,
-            is_buy,
-            0,
-            false,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )?;
-        let txn = cfg
-            .aptos_client
-            .sign_txn_with_turnkey_and_fee_payer(&db_user.address, &db_user.public_key, payload)
+            let is_buy = if direction == "long" { true } else { false };
+            let payload = place_order_to_subaccount(
+                &cfg.config.contract_address,
+                subaccount,
+                &market.market_addr,
+                price,
+                size,
+                is_buy,
+                0,
+                false,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            )?;
+            let txn = cfg
+                .aptos_client
+                .sign_txn_with_turnkey_and_fee_payer(&db_user.address, &db_user.public_key, payload)
+                .await?;
+
+            let txn_hash = cfg.aptos_client.submit_transaction_and_wait(txn).await?;
+
+            tracing::info!(
+                "{} placed order to subaccount {}: https://explorer.aptoslabs.com/txn/{}?network=decibel",
+                db_user.address,
+                subaccount,
+                txn_hash.clone()
+            );
+
+            bot.send_message(
+                chat_id,
+                format!("✅ Trade opened! <b>{} {} {}x</b> for <b>{} USDC</b> at <b>${}</b> <a href='https://explorer.aptoslabs.com/txn/{}?network=decibel'>View Txn</a>", market.market_name, direction.to_uppercase(), leverage, amount_to_trade, limit_price, txn_hash),
+            )
+            .parse_mode(ParseMode::Html)
             .await?;
+        } else {
+            let text = format!(
+                "You are placing {} <b>{}</b> limit order at price <b>{}</b> with margin <b>{} USDC</b> and Leverage <b>{}x</b>",
+                direction,
+                market.market_name.clone(),
+                limit_price,
+                amount_to_trade,
+                leverage
+            );
+            let is_long = if direction == "long" { true } else { false };
+            let kb = InlineKeyboardMarkup::new(vec![vec![
+                InlineKeyboardButton::callback(
+                    "🟢 Place Limit Order",
+                    UserAction::PlaceLimitOrder {
+                        market_name: market.market_name.clone(),
+                        is_long,
+                        price: limit_price.clone(),
+                        leverage,
+                        amount: amount_to_trade.clone(),
+                    }
+                    .to_string(),
+                ),
+                InlineKeyboardButton::callback("❌ Cancel", UserAction::Cancel.to_string()),
+            ]]);
+            bot.send_message(chat_id, text)
+                .reply_markup(kb)
+                .parse_mode(ParseMode::Html)
+                .await?;
+        }
 
-        let txn_hash = cfg.aptos_client.submit_transaction_and_wait(txn).await?;
-
-        tracing::info!(
-            "{} placed order to subaccount {}: https://explorer.aptoslabs.com/txn/{}?network=decibel",
-            db_user.address,
-            subaccount,
-            txn_hash.clone()
-        );
-
-        bot.send_message(
-            chat_id,
-            format!("✅ Trade opened! <b>{} {} {}x</b> for <b>{} USDC</b> at <b>${}</b> <a href='https://explorer.aptoslabs.com/txn/{}?network=decibel'>View Txn</a>", market.market_name, direction.to_uppercase(), leverage, amount_to_trade, limit_price, txn_hash),
-        )
-        .parse_mode(ParseMode::Html)
-        .await?;
         Ok(())
     }
 }
