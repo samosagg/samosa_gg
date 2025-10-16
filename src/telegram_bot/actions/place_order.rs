@@ -141,8 +141,8 @@ impl CallbackQueryProcessor for PlaceOrder {
         );
 
         let order_type = if self.is_long { "long" } else { "short" };
-        bot.send_message(   
-            chat_id,    
+        bot.send_message(
+            chat_id,
             format!("✅ Trade opened! <b>{} {} {}x</b> for <b>{} USDC</b> at <b>${}</b> <a href='https://explorer.aptoslabs.com/txn/{}?network=decibel'>View Txn</a>", self.market_name, order_type.to_uppercase(), self.leverage, self.amount, asset_context.mark_price.clone(), txn_hash),
         )
         .parse_mode(ParseMode::Html)

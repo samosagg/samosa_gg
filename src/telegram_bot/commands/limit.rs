@@ -180,8 +180,8 @@ impl CommandProcessor for Limit {
             txn_hash.clone()
         );
 
-        bot.send_message(   
-            chat_id,    
+        bot.send_message(
+            chat_id,
             format!("✅ Trade opened! <b>{} {} {}x</b> for <b>{} USDC</b> at <b>${}</b> <a href='https://explorer.aptoslabs.com/txn/{}?network=decibel'>View Txn</a>", market.market_name, direction.to_uppercase(), leverage, amount_to_trade, limit_price, txn_hash),
         )
         .parse_mode(ParseMode::Html)

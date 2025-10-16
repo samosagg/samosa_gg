@@ -80,8 +80,8 @@ impl StateProcessor for ExternalWithdrawAddress {
             txn_hash.clone()
         );
 
-        bot.edit_message_text(   
-            chat_id,    
+        bot.edit_message_text(
+            chat_id,
             processing_message.id,
             format!("✅ Txn completed! <a href='https://explorer.aptoslabs.com/txn/{}?network=decibel'>View Txn</a>", txn_hash),
         )

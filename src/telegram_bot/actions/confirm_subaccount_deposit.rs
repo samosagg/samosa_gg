@@ -69,8 +69,8 @@ impl CallbackQueryProcessor for ConfirmSubaccountDeposit {
             txn_hash.clone()
         );
 
-        bot.send_message(   
-            chat_id,    
+        bot.send_message(
+            chat_id,
             format!("✅ Txn completed! <a href='https://explorer.aptoslabs.com/txn/{}?network=decibel'>View Txn</a>", txn_hash),
         )
         .parse_mode(ParseMode::Html)
