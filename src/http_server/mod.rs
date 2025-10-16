@@ -6,9 +6,7 @@ use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use crate::{
     config::Config,
-    http_server::{
-        controllers::{auth, health},
-    },
+    http_server::controllers::{auth, health},
     utils::{aptos_client::AptosClient, database_utils::ArcDbPool, shutdown_utils},
 };
 use axum::{

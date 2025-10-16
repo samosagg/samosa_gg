@@ -13,13 +13,26 @@ use crate::{
     config::Config,
     telegram_bot::{
         actions::{
-            cancel::Cancel, change_degen_mode::ChangeDegenMode, change_notification::ChangeNotification, confirm_subaccount_deposit::ConfirmSubaccountDeposit, deposit_to_subaccount::DepositToSubaccount, export_pk::ExportPk, external_withdraw::ExternalWithdraw, limit_order_leverage::LimitOrderLeverage, order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder, place_order::PlaceOrder, show_pk::ShowPk, slippage::Slippage, update_slippage::UpdateSlippage, CallbackQueryProcessor, UserAction
+            CallbackQueryProcessor, UserAction, cancel::Cancel, change_degen_mode::ChangeDegenMode,
+            change_notification::ChangeNotification,
+            confirm_subaccount_deposit::ConfirmSubaccountDeposit,
+            deposit_to_subaccount::DepositToSubaccount, export_pk::ExportPk,
+            external_withdraw::ExternalWithdraw, limit_order_leverage::LimitOrderLeverage,
+            order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder,
+            place_order::PlaceOrder, show_pk::ShowPk, slippage::Slippage,
+            update_slippage::UpdateSlippage,
         },
         commands::{
-            dashboard::Dashboard, limit::Limit, long::Long, mint::Mint, settings::Settings, short::Short, start::Start, CommandProcessor, PrivateCommand
+            CommandProcessor, PrivateCommand, dashboard::Dashboard, limit::Limit, long::Long,
+            mint::Mint, settings::Settings, short::Short, start::Start,
         },
         states::{
-            custom_slippage::CustomSlippage, deposit_to_subaccount::DepositToSubaccount as DepositToSubaccountAmount, external_withdraw_address::ExternalWithdrawAddress, external_withdraw_amount::ExternalWithdrawAmount, limit_order_margin::LimitOrderMargin, limit_pair::LimitPair, limit_price::LimitPrice, order_margin::OrderMargin, order_pair::OrderPair, PendingState, StateProcessor
+            PendingState, StateProcessor, custom_slippage::CustomSlippage,
+            deposit_to_subaccount::DepositToSubaccount as DepositToSubaccountAmount,
+            external_withdraw_address::ExternalWithdrawAddress,
+            external_withdraw_amount::ExternalWithdrawAmount, limit_order_margin::LimitOrderMargin,
+            limit_pair::LimitPair, limit_price::LimitPrice, order_margin::OrderMargin,
+            order_pair::OrderPair,
         },
     },
     utils::{aptos_client::AptosClient, database_utils::ArcDbPool},
@@ -107,7 +120,7 @@ async fn private_commands_handler(
     };
     if let Err(err) = command_processor.process(cfg, bot.clone(), msg).await {
         tracing::error!("Command failed: {:?}", err);
-        send_temporary_message(&bot, chat_id, format!("{}", err), 15).await?;
+        bot.send_message(chat_id, format!("{}", err)).await?;
     }
     Ok(())
 }
@@ -133,10 +146,12 @@ async fn handle_callback_query(
                     market_name,
                     is_long,
                     leverage,
+                    balance,
                 }) => Some(Box::new(OrderLeverage {
                     market_name,
                     is_long,
                     leverage,
+                    balance,
                 })),
                 Ok(UserAction::PlaceOrder {
                     market_name,
@@ -181,7 +196,9 @@ async fn handle_callback_query(
                     Some(Box::new(ChangeDegenMode { user_id, to }))
                 }
                 Ok(UserAction::DepositToSubaccount) => Some(Box::new(DepositToSubaccount)),
-                Ok(UserAction::ConfirmSubaccountDeposit{ amount }) => Some(Box::new(ConfirmSubaccountDeposit{ amount })),
+                Ok(UserAction::ConfirmSubaccountDeposit { amount }) => {
+                    Some(Box::new(ConfirmSubaccountDeposit { amount }))
+                }
                 Ok(UserAction::ExternalWithdraw) => Some(Box::new(ExternalWithdraw)),
                 Err(_) => {
                     tracing::warn!("Unknown callback: {}", data);
@@ -195,7 +212,7 @@ async fn handle_callback_query(
                 let msg = query
                     .message
                     .ok_or_else(|| anyhow::anyhow!("Message missing in callback query"))?;
-                send_temporary_message(&bot, msg.chat().id, format!("{}", err), 15).await?;
+                bot.send_message(msg.chat().id, format!("{}", err)).await?;
             }
         }
     }
@@ -219,15 +236,19 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
 
     if let Some(state) = maybe_state {
         let state_processor: Box<dyn StateProcessor + Send + Sync> = match state {
-            PendingState::OrderPair { is_long } => Box::new(OrderPair { is_long }),
+            PendingState::OrderPair { is_long, balance } => {
+                Box::new(OrderPair { is_long, balance })
+            }
             PendingState::OrderMargin {
                 market_name,
                 is_long,
                 leverage,
+                balance,
             } => Box::new(OrderMargin {
                 market_name,
                 is_long,
                 leverage,
+                balance,
             }),
             PendingState::LimitPair => Box::new(LimitPair),
             PendingState::LimitPrice { market_name } => Box::new(LimitPrice { market_name }),
@@ -243,13 +264,18 @@ async fn input_handler(cfg: Arc<TelegramBot<Cache>>, bot: Bot, msg: Message) -> 
             PendingState::UpdateSlippage => Box::new(CustomSlippage),
             PendingState::DepositToSubaccount { address, balance } => {
                 Box::new(DepositToSubaccountAmount { address, balance })
-            },
-            PendingState::ExternalWithdrawAmount{ balance } => Box::new(ExternalWithdrawAmount{ balance }),
-            PendingState::ExternalWithdrawAddress { amount } => Box::new(ExternalWithdrawAddress{ amount })
+            }
+            PendingState::ExternalWithdrawAmount { balance } => {
+                Box::new(ExternalWithdrawAmount { balance })
+            }
+            PendingState::ExternalWithdrawAddress { amount } => {
+                Box::new(ExternalWithdrawAddress { amount })
+            }
         };
         if let Err(err) = state_processor.process(cfg, bot.clone(), msg, text).await {
             tracing::error!("Command failed: {:?}", err);
-            send_temporary_message(&bot, chat_id, format!("{}", err), 15).await?;
+            bot.send_message(chat_id, format!("{}", err)).await?;
+            // send_temporary_message(&bot, chat_id, format!("{}", err), 15).await?;
         }
     }
     Ok(())

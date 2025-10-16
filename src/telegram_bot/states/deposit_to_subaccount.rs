@@ -14,7 +14,7 @@ use crate::{
 
 pub struct DepositToSubaccount {
     pub address: String,
-    pub balance: BigDecimal
+    pub balance: BigDecimal,
 }
 
 #[async_trait::async_trait]
@@ -40,27 +40,25 @@ impl StateProcessor for DepositToSubaccount {
             state.remove(&chat_id);
         }
         if amount > self.balance {
-            bot.send_message(chat_id, "You don't have enough USDC balance").await?;
-            return Ok(())
+            bot.send_message(chat_id, "You don't have enough USDC balance")
+                .await?;
+            return Ok(());
         };
 
-      let text = format!(
-        "⚡ You’re sending <b>{} USDC</b> to your subaccount!\n\n\
+        let text = format!(
+            "⚡ You’re sending <b>{} USDC</b> to your subaccount!\n\n\
         🧾 <b>Subaccount:</b> <code>{}</code>\n\n\
         Double-check the amount before confirming — once it’s in, it’s ready for trading 🚀",
-        amount, 
-        self.address
+            amount, self.address
         );
 
-
-        let markup = InlineKeyboardMarkup::new(
-            vec![
-                vec![
-                    InlineKeyboardButton::callback("✅ Confirm Deposit", UserAction::ConfirmSubaccountDeposit { amount }.to_string()),
-                    InlineKeyboardButton::callback("❌ Cancel", UserAction::Cancel.to_string()),
-                ]
-            ]
-        );
+        let markup = InlineKeyboardMarkup::new(vec![vec![
+            InlineKeyboardButton::callback(
+                "✅ Confirm Deposit",
+                UserAction::ConfirmSubaccountDeposit { amount }.to_string(),
+            ),
+            InlineKeyboardButton::callback("❌ Cancel", UserAction::Cancel.to_string()),
+        ]]);
 
         bot.send_message(chat_id, text)
             .parse_mode(ParseMode::Html)

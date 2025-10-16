@@ -6,9 +6,11 @@ pub mod cancel;
 pub mod change_degen_mode;
 pub mod change_notification;
 pub mod chart;
+pub mod confirm_subaccount_deposit;
 pub mod create_trading_account;
 pub mod deposit_to_subaccount;
 pub mod export_pk;
+pub mod external_withdraw;
 pub mod join_existing_clan;
 pub mod limit_order_leverage;
 pub mod open_position;
@@ -20,8 +22,6 @@ pub mod slippage;
 pub mod stats;
 pub mod transfer;
 pub mod update_slippage;
-pub mod external_withdraw;
-pub mod confirm_subaccount_deposit;
 
 use std::{str::FromStr, sync::Arc};
 
@@ -48,6 +48,7 @@ pub enum UserAction {
         market_name: String,
         is_long: bool,
         leverage: u8,
+        balance: f64,
     },
     PlaceOrder {
         market_name: String,
@@ -79,7 +80,7 @@ pub enum UserAction {
     },
     DepositToSubaccount,
     ConfirmSubaccountDeposit {
-        amount: BigDecimal
+        amount: BigDecimal,
     },
     ExternalWithdraw,
 }
@@ -91,7 +92,11 @@ impl ToString for UserAction {
                 market_name,
                 is_long,
                 leverage,
-            } => format!("order_leverage|{}|{}|{}", market_name, is_long, leverage),
+                balance,
+            } => format!(
+                "order_lev|{}|{}|{}|{}",
+                market_name, is_long, leverage, balance
+            ),
             UserAction::PlaceOrder {
                 market_name,
                 is_long,
@@ -123,8 +128,10 @@ impl ToString for UserAction {
             }
             UserAction::UpdateSlippage => "update_slippage".to_string(),
             UserAction::DepositToSubaccount => "dep_to_sub".to_string(),
-            UserAction::ConfirmSubaccountDeposit{ amount } => format!("confirm_dep_to_sub|{}", amount),
-            UserAction::ExternalWithdraw => "external_withdraw".to_string()
+            UserAction::ConfirmSubaccountDeposit { amount } => {
+                format!("confirm_dep_to_sub|{}", amount)
+            }
+            UserAction::ExternalWithdraw => "external_withdraw".to_string(),
         }
     }
 }
@@ -135,14 +142,16 @@ impl FromStr for UserAction {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split('|').collect();
         match parts[0] {
-            "order_leverage" if parts.len() == 4 => {
+            "order_lev" if parts.len() == 5 => {
                 let market_name = parts[1].to_string();
                 let is_long = parts[2].parse::<bool>().map_err(|_| ())?;
                 let leverage = parts[3].parse::<u8>().map_err(|_| ())?;
+                let balance = parts[4].parse::<f64>().map_err(|_| ())?;
                 Ok(UserAction::OrderLeverage {
                     market_name,
                     is_long,
                     leverage,
+                    balance,
                 })
             }
             "place" if parts.len() == 5 => {
@@ -196,7 +205,7 @@ impl FromStr for UserAction {
             "confirm_dep_to_sub" if parts.len() == 2 => {
                 let amount = BigDecimal::from_str(&parts[1].to_string()).map_err(|_| ())?;
                 Ok(UserAction::ConfirmSubaccountDeposit { amount })
-            },
+            }
             "external_withdraw" => Ok(UserAction::ExternalWithdraw),
             _ => Err(()),
         }

@@ -1,20 +1,18 @@
 use std::sync::Arc;
 
 use bigdecimal::BigDecimal;
-use teloxide::{
-    payloads::SendMessageSetters, prelude::Requester,
-    types::ParseMode,
-};
+use teloxide::{payloads::SendMessageSetters, prelude::Requester, types::ParseMode};
 
 use crate::{
     cache::Cache,
     telegram_bot::{
-        states::{PendingState, StateProcessor}, TelegramBot
+        TelegramBot,
+        states::{PendingState, StateProcessor},
     },
 };
 
-pub struct ExternalWithdrawAmount{
-    pub balance: BigDecimal
+pub struct ExternalWithdrawAmount {
+    pub balance: BigDecimal,
 }
 
 #[async_trait::async_trait]
@@ -42,13 +40,19 @@ impl StateProcessor for ExternalWithdrawAmount {
         }
 
         if amount > self.balance {
-            bot.send_message(chat_id, "You don't have enough USDC balance").await?;
-            return Ok(())
+            bot.send_message(chat_id, "You don't have enough USDC balance")
+                .await?;
+            return Ok(());
         };
 
         {
             let mut state = cfg.state.lock().await;
-            state.insert(chat_id, PendingState::ExternalWithdrawAddress { amount: amount.clone() });
+            state.insert(
+                chat_id,
+                PendingState::ExternalWithdrawAddress {
+                    amount: amount.clone(),
+                },
+            );
         }
 
         let text = format!(
@@ -59,8 +63,11 @@ impl StateProcessor for ExternalWithdrawAmount {
             amount
         );
 
-        bot.send_message(chat_id, text).parse_mode(ParseMode::Html).await?;
-        bot.send_message(chat_id, "Reply with the destination address:").await?;
+        bot.send_message(chat_id, text)
+            .parse_mode(ParseMode::Html)
+            .await?;
+        bot.send_message(chat_id, "Reply with the destination address:")
+            .await?;
         Ok(())
     }
 }

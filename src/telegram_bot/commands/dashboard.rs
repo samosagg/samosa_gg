@@ -49,11 +49,11 @@ impl CommandProcessor for Dashboard {
         let usdc = (balance as f64) / 10f64.powi(6);
 
         let text = format!(
-            "📊 *TradeBot Dashboard*\n\n`{}`\n\n💵 Available Balance: *\\{} USDC*\n\n📂 Active Positions\\: {}",
+            "📊 <b>TradeBot Dashboard</b>\n\n<code>{}</code>\n\n💵 Available Balance: <b>\\{} USDC</b>\n\n📂 Active Positions\\: {}",
             db_user.address, usdc, "No active positions"
         );
         bot.edit_message_text(chat_id, message.id, text)
-            .parse_mode(ParseMode::MarkdownV2)
+            .parse_mode(ParseMode::Html)
             .await?;
         Ok(())
     }

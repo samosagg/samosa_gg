@@ -9,9 +9,8 @@ use crate::{
         commands::{CommandProcessor, PrivateCommand},
     },
     utils::{
-        database_connection::get_db_connection,
-        db_execution::execute_with_better_error,
-        decibel_transaction::delegate_trading_to
+        database_connection::get_db_connection, db_execution::execute_with_better_error,
+        decibel_transaction::delegate_trading_to,
     },
 };
 use anyhow::Context;

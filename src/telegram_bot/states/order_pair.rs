@@ -14,6 +14,7 @@ use crate::{
 
 pub struct OrderPair {
     pub is_long: bool,
+    pub balance: f64,
 }
 
 #[async_trait::async_trait]
@@ -29,9 +30,7 @@ impl StateProcessor for OrderPair {
 
         let similar_markets = cfg.cache.get_markets_ilike(&text).await;
         if similar_markets.len() == 0 {
-            bot.send_message(chat_id, "Ticker not found, try again")
-                .await?;
-            return Ok(());
+            return Err(anyhow::anyhow!("Ticker not found, try again"));
         }
         let market = similar_markets
             .first()
@@ -48,6 +47,7 @@ impl StateProcessor for OrderPair {
                 market_name: market.market_name.clone(),
                 is_long: self.is_long,
                 leverage,
+                balance: self.balance,
             }
             .to_string();
             row.push(InlineKeyboardButton::callback(
@@ -63,10 +63,17 @@ impl StateProcessor for OrderPair {
             keyboard.push(row);
         }
         let kb = InlineKeyboardMarkup::new(keyboard);
-        bot.send_message(chat_id, "*Choose leverage*")
-            .parse_mode(ParseMode::MarkdownV2)
-            .reply_markup(kb)
-            .await?;
+        bot.send_message(
+            chat_id,
+            "⚙️ <b>Choose your leverage</b>\n\nSelect how much risk you want to take:\n\
+            • 1x — Safe & steady 🛡️\n\
+            • 5x — Moderate risk ⚖️\n\
+            • 10x — High risk ⚡\n\
+            • 20x+ — Degens only 💀",
+        )
+        .parse_mode(ParseMode::Html)
+        .reply_markup(kb)
+        .await?;
 
         Ok(())
     }

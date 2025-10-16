@@ -1,12 +1,12 @@
 pub mod custom_slippage;
 pub mod deposit_to_subaccount;
+pub mod external_withdraw_address;
+pub mod external_withdraw_amount;
 pub mod limit_order_margin;
 pub mod limit_pair;
 pub mod limit_price;
 pub mod order_margin;
 pub mod order_pair;
-pub mod external_withdraw_amount;
-pub mod external_withdraw_address;
 
 use bigdecimal::BigDecimal;
 
@@ -17,11 +17,13 @@ use std::sync::Arc;
 pub enum PendingState {
     OrderPair {
         is_long: bool,
+        balance: f64,
     },
     OrderMargin {
         market_name: String,
         is_long: bool,
         leverage: u8,
+        balance: f64,
     },
     LimitPair,
     LimitPrice {
@@ -35,14 +37,14 @@ pub enum PendingState {
     UpdateSlippage,
     DepositToSubaccount {
         address: String,
-        balance: BigDecimal
+        balance: BigDecimal,
     },
-    ExternalWithdrawAmount{
-        balance: BigDecimal
+    ExternalWithdrawAmount {
+        balance: BigDecimal,
     },
     ExternalWithdrawAddress {
-        amount: BigDecimal
-    }
+        amount: BigDecimal,
+    },
 }
 
 #[async_trait::async_trait]

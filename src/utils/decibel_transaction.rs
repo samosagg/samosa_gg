@@ -3,14 +3,21 @@ use std::str::FromStr;
 use anyhow::Ok;
 use aptos_sdk::{
     bcs,
-    move_types::{identifier::Identifier, language_storage::{ModuleId, StructTag, TypeTag}},
+    move_types::{
+        identifier::Identifier,
+        language_storage::{ModuleId, StructTag, TypeTag},
+    },
     types::{
         account_address::AccountAddress,
         transaction::{EntryFunction, TransactionPayload},
     },
 };
 
-pub fn transfer_fungible_asset(fa: &str, to: &str, amount: u64) -> anyhow::Result<TransactionPayload> {
+pub fn transfer_fungible_asset(
+    fa: &str,
+    to: &str,
+    amount: u64,
+) -> anyhow::Result<TransactionPayload> {
     let module = ModuleId::new(
         AccountAddress::ONE,
         Identifier::new("primary_fungible_store")?,
@@ -20,16 +27,12 @@ pub fn transfer_fungible_asset(fa: &str, to: &str, amount: u64) -> anyhow::Resul
     let payload = TransactionPayload::EntryFunction(EntryFunction::new(
         module,
         Identifier::new("transfer")?,
-        vec![TypeTag::Struct(
-            Box::new(
-                StructTag {
-                    address: AccountAddress::ONE,
-                    module: Identifier::new("fungible_asset")?,
-                    name: Identifier::new("Metadata")?,
-                    type_args: vec![]
-                }
-            )
-        )],
+        vec![TypeTag::Struct(Box::new(StructTag {
+            address: AccountAddress::ONE,
+            module: Identifier::new("fungible_asset")?,
+            name: Identifier::new("Metadata")?,
+            type_args: vec![],
+        }))],
         vec![
             bcs::to_bytes(&fa)?,
             bcs::to_bytes(&to)?,

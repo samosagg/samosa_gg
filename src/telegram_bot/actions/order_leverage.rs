@@ -1,6 +1,11 @@
 use std::sync::Arc;
 
-use teloxide::{Bot, prelude::Requester, types::CallbackQuery};
+use teloxide::{
+    Bot,
+    payloads::SendMessageSetters,
+    prelude::Requester,
+    types::{CallbackQuery, ParseMode},
+};
 
 use crate::{
     cache::Cache,
@@ -11,6 +16,7 @@ pub struct OrderLeverage {
     pub market_name: String,
     pub is_long: bool,
     pub leverage: u8,
+    pub balance: f64,
 }
 
 #[async_trait::async_trait]
@@ -34,12 +40,23 @@ impl CallbackQueryProcessor for OrderLeverage {
                     market_name: self.market_name.clone(),
                     is_long: self.is_long,
                     leverage: self.leverage,
+                    balance: self.balance,
                 },
             );
         }
 
-        bot.send_message(chat_id, "Write USDC amount e.g. 10")
-            .await?;
+        bot.send_message(
+            chat_id,
+            format!(
+                "<b>💵 Enter the USDC amount you want to trade</b>\n\n\
+            Example: <code>{}</code>\n\
+            (This is in USDC — make sure you have enough balance in your wallet.)",
+                self.balance
+            ),
+        )
+        .parse_mode(ParseMode::Html)
+        .await?;
+
         Ok(())
     }
 }

@@ -1,23 +1,19 @@
-use std::{str::FromStr, sync::Arc};
 use bigdecimal::BigDecimal;
-use teloxide::{
-    prelude::*,
-    types::ParseMode,
-};
+use std::{str::FromStr, sync::Arc};
+use teloxide::{prelude::*, types::ParseMode};
 
 use crate::{
     cache::Cache,
     models::db::users::User,
-    telegram_bot::{
-        actions::CallbackQueryProcessor, TelegramBot
-    },
+    telegram_bot::{TelegramBot, actions::CallbackQueryProcessor},
     utils::{
-        database_connection::get_db_connection, decibel_transaction::deposit_to_subaccount_at, view_requests::view_primary_subaccount
+        database_connection::get_db_connection, decibel_transaction::deposit_to_subaccount_at,
+        view_requests::view_primary_subaccount,
     },
 };
 
-pub struct ConfirmSubaccountDeposit{
-    pub amount: BigDecimal
+pub struct ConfirmSubaccountDeposit {
+    pub amount: BigDecimal,
 }
 
 #[async_trait::async_trait]
@@ -53,7 +49,12 @@ impl CallbackQueryProcessor for ConfirmSubaccountDeposit {
         // balance
         let scaled_amount = &self.amount * BigDecimal::from_str("1000000")?;
         let amount_u64 = scaled_amount.with_scale(0).to_string().parse::<u64>()?;
-        let payload = deposit_to_subaccount_at(&cfg.config.contract_address, subaccount, "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02", amount_u64)?;
+        let payload = deposit_to_subaccount_at(
+            &cfg.config.contract_address,
+            subaccount,
+            "0x6555ba01030b366f91c999ac943325096495b339d81e216a2af45e1023609f02",
+            amount_u64,
+        )?;
         let txn = cfg
             .aptos_client
             .sign_txn_with_turnkey_and_fee_payer(&db_user.address, &db_user.public_key, payload)

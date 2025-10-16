@@ -10,6 +10,9 @@ pub struct Market {
     pub sz_decimals: u8,
     pub px_decimals: u8,
     pub max_leverage: u8,
+    pub tick_size: u64,
+    pub min_size: u64,
+    pub lot_size: u8,
     pub max_open_interest: f64,
 }
 
@@ -17,7 +20,6 @@ pub struct Market {
 pub struct AssetContext {
     pub market: String,
     pub volume_24h: BigDecimal,
-    pub funding_index: BigDecimal,
     pub open_interest: BigDecimal,
     pub mark_price: BigDecimal,
     pub mid_price: BigDecimal,

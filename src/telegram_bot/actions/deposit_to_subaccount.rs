@@ -1,5 +1,5 @@
-use std::{str::FromStr, sync::Arc};
 use bigdecimal::BigDecimal;
+use std::{str::FromStr, sync::Arc};
 use teloxide::{
     prelude::*,
     types::{ForceReply, ParseMode},
@@ -8,11 +8,7 @@ use teloxide::{
 use crate::{
     cache::Cache,
     models::db::users::User,
-    telegram_bot::{
-        TelegramBot,
-        actions::CallbackQueryProcessor,
-        states::PendingState,
-    },
+    telegram_bot::{TelegramBot, actions::CallbackQueryProcessor, states::PendingState},
     utils::{
         database_connection::get_db_connection,
         view_requests::{view_fa_balance_request, view_primary_subaccount},
@@ -85,7 +81,7 @@ impl CallbackQueryProcessor for DepositToSubaccount {
                 chat_id,
                 PendingState::DepositToSubaccount {
                     address: subaccount.into(),
-                    balance: usdc
+                    balance: usdc,
                 },
             );
         }

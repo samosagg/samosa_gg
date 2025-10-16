@@ -1,9 +1,12 @@
-use std::{str::FromStr, sync::Arc};
 use bigdecimal::BigDecimal;
+use std::{str::FromStr, sync::Arc};
 use teloxide::{prelude::*, types::ForceReply};
 
 use crate::{
-    cache::Cache, models::db::users::User, telegram_bot::{actions::CallbackQueryProcessor, states::PendingState, TelegramBot}, utils::{database_connection::get_db_connection, view_requests::view_fa_balance_request}
+    cache::Cache,
+    models::db::users::User,
+    telegram_bot::{TelegramBot, actions::CallbackQueryProcessor, states::PendingState},
+    utils::{database_connection::get_db_connection, view_requests::view_fa_balance_request},
 };
 
 pub struct ExternalWithdraw;
@@ -44,11 +47,12 @@ impl CallbackQueryProcessor for ExternalWithdraw {
             "🌐 <b>Withdraw to External Wallet</b>\n\n\
             Your main wallet balance: <b>{} USDC</b>\n\n\
             Address: <code>{}</code>",
-            usdc,
-            db_user.address
+            usdc, db_user.address
         );
 
-        bot.send_message(chat_id, text).parse_mode(teloxide::types::ParseMode::Html).await?;
+        bot.send_message(chat_id, text)
+            .parse_mode(teloxide::types::ParseMode::Html)
+            .await?;
         bot.send_message(
             chat_id,
             "Reply with the amount in USDC you want to withdraw",
@@ -60,9 +64,7 @@ impl CallbackQueryProcessor for ExternalWithdraw {
             let mut state = cfg.state.lock().await;
             state.insert(
                 chat_id,
-                PendingState::ExternalWithdrawAmount {
-                    balance: usdc
-                },
+                PendingState::ExternalWithdrawAmount { balance: usdc },
             );
         }
         Ok(())
