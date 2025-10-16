@@ -1,6 +1,16 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    processor_status (processor) {
+        #[max_length = 50]
+        processor -> Varchar,
+        last_success_version -> Int8,
+        last_updated -> Timestamp,
+        last_transaction_timestamp -> Nullable<Timestamp>,
+    }
+}
+
+diesel::table! {
     subaccounts (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -26,4 +36,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(subaccounts, users,);
+diesel::allow_tables_to_appear_in_same_query!(processor_status, subaccounts, users,);

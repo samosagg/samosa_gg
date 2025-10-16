@@ -23,6 +23,7 @@ pub struct Config {
     pub turnkey_config: TurnkeyConfig,
     pub bot_config: BotConfig,
     pub admin_config: AdminConfig,
+    pub stream_config: StreamConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -85,4 +86,13 @@ impl Config {
 
         Ok(config)
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreamConfig {
+    pub indexer_grpc: String,
+    pub starting_version: i64,
+    pub ending_version: Option<i64>,
+    pub auth_token: String,
+    pub request_name_header: String,
 }

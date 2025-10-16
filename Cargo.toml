@@ -25,7 +25,7 @@ serde_yaml = "0.9.34"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 # diesel dependencies
-diesel = { version = "2.3.2", features = ["postgres_backend", "serde_json", "uuid"] }
+diesel = { version = "2.3.2", features = ["postgres_backend", "serde_json", "uuid", "chrono"] }
 diesel-async = { git = "https://github.com/weiznich/diesel_async.git", rev = "ba8ad28036fb8324805480d5c24e1eb41ceccbe5", features = [
     "async-connection-wrapper",
     "postgres",

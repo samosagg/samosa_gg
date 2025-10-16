@@ -11,7 +11,7 @@ deisel setup
 # Generate migration
 ```sh
 diesel migration generate <migration_name> --migration-dir src/db_migrations/migrations 
-diesel migration generate create_tables --migration-dir src/db_migrations/migrations 
+diesel migration generate processor_status --migration-dir src/db_migrations/migrations 
 ```
 
 # Run migration

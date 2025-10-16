@@ -6,7 +6,11 @@ use std::{collections::HashMap, str::FromStr, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use futures_util::lock::Mutex;
-use teloxide::{prelude::*, types::{InlineKeyboardButton, InlineKeyboardMarkup, Me}, utils::command::BotCommands};
+use teloxide::{
+    prelude::*,
+    types::{InlineKeyboardButton, InlineKeyboardMarkup, Me},
+    utils::command::BotCommands,
+};
 use tokio::time::sleep;
 use url::Url;
 
@@ -19,21 +23,20 @@ use crate::{
             change_notification::ChangeNotification,
             confirm_subaccount_deposit::ConfirmSubaccountDeposit,
             deposit_to_subaccount::DepositToSubaccount, export_pk::ExportPk,
-            external_withdraw::ExternalWithdraw,
-            order_leverage::OrderLeverage, place_limit_order::PlaceLimitOrder,
-            place_order::PlaceOrder, show_pk::ShowPk, slippage::Slippage,
-            update_slippage::UpdateSlippage,
+            external_withdraw::ExternalWithdraw, order_leverage::OrderLeverage,
+            place_limit_order::PlaceLimitOrder, place_order::PlaceOrder, show_pk::ShowPk,
+            slippage::Slippage, update_slippage::UpdateSlippage,
         },
         commands::{
-            CommandProcessor, PrivateCommand, dashboard::Dashboard, limit::Limit, long::Long,
-            mint::Mint, settings::Settings, short::Short, start::Start,
+            BotCommand, CommandProcessor, chart::Chart, dashboard::Dashboard, limit::Limit,
+            long::Long, mint::Mint, settings::Settings, short::Short, start::Start,
+            stoploss::Stoploss, takeprofit::Takeprofit,
         },
         states::{
             PendingState, StateProcessor, custom_slippage::CustomSlippage,
             deposit_to_subaccount::DepositToSubaccount as DepositToSubaccountAmount,
             external_withdraw_address::ExternalWithdrawAddress,
-            external_withdraw_amount::ExternalWithdrawAmount,
-            order_margin::OrderMargin,
+            external_withdraw_amount::ExternalWithdrawAmount, order_margin::OrderMargin,
             order_pair::OrderPair,
         },
     },
@@ -71,14 +74,14 @@ where
         tracing::info!("Starting telegram bot...");
         let bot = Bot::new(&self.config.bot_config.token);
 
-        bot.set_my_commands(PrivateCommand::bot_commands())
+        bot.set_my_commands(BotCommand::bot_commands())
             .await
             .expect("Failed to set bot commands");
 
         let handler = dptree::entry()
             .branch(
                 Update::filter_message()
-                    .filter_command::<PrivateCommand>()
+                    .filter_command::<BotCommand>()
                     .endpoint(private_commands_handler),
             )
             .branch(Update::filter_callback_query().endpoint(handle_callback_query))
@@ -105,45 +108,47 @@ async fn private_commands_handler(
     bot: Bot,
     _me: Me,
     msg: Message,
-    cmd: PrivateCommand,
+    cmd: BotCommand,
 ) -> anyhow::Result<()> {
     let chat_id = msg.chat.id;
     let is_private = matches!(msg.chat.kind, teloxide::types::ChatKind::Private(_));
     if !is_private && !cmd.allowed_in_group() {
         let me = bot.get_me().await?;
-        let bot_username = me.username.as_ref().ok_or_else(|| anyhow::anyhow!("Failed to get bot username"))?;
+        let bot_username = me
+            .username
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Failed to get bot username"))?;
         tracing::info!("{}", bot_username);
         let text = msg.text().context("Message text is missing")?;
 
         // Create a longer-lived variable for the URL string
-        let url_str = format!("https://t.me/{}?start={}", bot_username, text.trim_start_matches("/"));
+        let url_str = format!(
+            "https://t.me/{}?start={}",
+            bot_username,
+            text.trim_start_matches("/")
+        );
         tracing::info!("{}", url_str);
         let url = Url::from_str(&url_str)?;
 
-        let markup = InlineKeyboardMarkup::new(vec![
-            vec![
-                InlineKeyboardButton::url("Go here", url)
-            ]
-        ]);
+        let markup =
+            InlineKeyboardMarkup::new(vec![vec![InlineKeyboardButton::url("Go here", url)]]);
 
-        bot.send_message(chat_id, text)
-            .reply_markup(markup)
-            .await?;
+        bot.send_message(chat_id, text).reply_markup(markup).await?;
 
         return Ok(());
     }
 
     let command_processor: Box<dyn CommandProcessor + Send + Sync> = match cmd {
-        PrivateCommand::Start => Box::new(Start),
-        PrivateCommand::Mint => Box::new(Mint),
-        PrivateCommand::Dashboard => Box::new(Dashboard),
-        PrivateCommand::Long => Box::new(Long),
-        PrivateCommand::Short => Box::new(Short),
-        PrivateCommand::Limit => Box::new(Limit),
-        PrivateCommand::Settings => Box::new(Settings),
-        PrivateCommand::Chart => Box::new(Settings),
-        // PrivateCommand::Terminal => Box::new(Terminal),
-        // PrivateCommand::Positions => Box::new(Positions),
+        BotCommand::Start => Box::new(Start),
+        BotCommand::Mint => Box::new(Mint),
+        BotCommand::Dashboard => Box::new(Dashboard),
+        BotCommand::Long => Box::new(Long),
+        BotCommand::Short => Box::new(Short),
+        BotCommand::Limit => Box::new(Limit),
+        BotCommand::Settings => Box::new(Settings),
+        BotCommand::Chart => Box::new(Chart),
+        BotCommand::Takeprofit => Box::new(Takeprofit),
+        BotCommand::Stoploss => Box::new(Stoploss),
     };
     if let Err(err) = command_processor.process(cfg, bot.clone(), msg).await {
         tracing::error!("Command failed: {:?}", err);

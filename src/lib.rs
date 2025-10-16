@@ -6,6 +6,7 @@ pub mod models;
 pub mod schema;
 pub mod telegram_bot;
 pub mod utils;
+pub mod workers;
 
 use std::sync::Arc;
 

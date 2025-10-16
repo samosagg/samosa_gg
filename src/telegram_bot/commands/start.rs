@@ -6,7 +6,7 @@ use crate::{
     schema::users,
     telegram_bot::{
         TelegramBot,
-        commands::{CommandProcessor, PrivateCommand},
+        commands::{BotCommand, CommandProcessor},
     },
     utils::{
         database_connection::get_db_connection, db_execution::execute_with_better_error,
@@ -14,7 +14,11 @@ use crate::{
     },
 };
 use anyhow::Context;
-use teloxide::{prelude::*, types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode}, utils::command::BotCommands};
+use teloxide::{
+    prelude::*,
+    types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode},
+    utils::command::BotCommands,
+};
 use url::Url;
 pub struct Start;
 
@@ -76,20 +80,20 @@ impl CommandProcessor for Start {
         let text = format!(
             "👋 Welcome to TradeBot\\!\n\n`{}`\n\n{}",
             db_user.address,
-            PrivateCommand::descriptions()
+            BotCommand::descriptions()
         );
         let me = bot.get_me().await?;
-        let bot_username = me.username.as_ref().ok_or_else(|| anyhow::anyhow!("Failed to get bot username"))?;
-        let markup = InlineKeyboardMarkup::new(
-            vec![
-                vec![
-                    InlineKeyboardButton::callback("Join existing clan", "join"),
-                    InlineKeyboardButton::url("➕ Add To Group",  Url::from_str(
-                        &format!("https://t.me/{}?startgroup=true", bot_username)
-                    )?)
-                ]
-            ]
-        );
+        let bot_username = me
+            .username
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Failed to get bot username"))?;
+        let markup = InlineKeyboardMarkup::new(vec![vec![
+            InlineKeyboardButton::callback("Join existing clan", "join"),
+            InlineKeyboardButton::url(
+                "➕ Add To Group",
+                Url::from_str(&format!("https://t.me/{}?startgroup=true", bot_username))?,
+            ),
+        ]]);
         bot.edit_message_text(chat_id, message.id, text)
             .reply_markup(markup)
             .parse_mode(ParseMode::MarkdownV2)

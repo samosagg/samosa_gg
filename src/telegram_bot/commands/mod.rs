@@ -7,6 +7,8 @@ pub mod positions;
 pub mod settings;
 pub mod short;
 pub mod start;
+pub mod stoploss;
+pub mod takeprofit;
 pub mod terminal;
 pub mod wallet;
 
@@ -31,7 +33,7 @@ pub trait CommandProcessor {
     rename_rule = "lowercase",
     description = "The following commands are supported:"
 )]
-pub enum PrivateCommand {
+pub enum BotCommand {
     #[command(description = "Setup your account")]
     Start,
     #[command(description = "Mint usdc faucet")]
@@ -46,19 +48,19 @@ pub enum PrivateCommand {
     Limit,
     #[command(description = "Open your settings")]
     Settings,
-    // #[command(description = "Open your account on Terminal")]
-    // Terminal,
     #[command(description = "See chart")]
     Chart,
-    // #[command(description = "See postions")]
-    // Positions,
+    #[command(description = "Add take profit on a position")]
+    Takeprofit,
+    #[command(description = "Add stop loss on a position")]
+    Stoploss,
 }
 
-impl PrivateCommand {
+impl BotCommand {
     pub fn allowed_in_group(&self) -> bool {
-        matches!(self,
-            PrivateCommand::Chart 
-            // | PrivateCommand::Dashboard
+        matches!(
+            self,
+            BotCommand::Chart // | BotCommand::Dashboard
         )
     }
 }
